@@ -42,6 +42,27 @@ The API will run at:
 http://localhost:5000
 ```
 
+## Deploying To Render
+
+Create one Render Web Service from the GitHub repository.
+
+Use these settings:
+
+- Service type: `Web Service`
+- Branch: `main`
+- Root Directory: `frontend/backend`
+- Runtime: `Node`
+- Build Command: `npm install`
+- Start Command: `npm start`
+
+Add these environment variables in Render:
+
+- `MONGO_URI` - your MongoDB Atlas connection string
+- `JWT_SECRET` - a strong secret value
+- `NODE_ENV` - `production`
+
+After deploy, open the Render URL. The same service serves the frontend pages and the backend API.
+
 ## API Routes
 
 - `POST /api/auth/register`
