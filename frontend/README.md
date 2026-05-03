@@ -1,0 +1,56 @@
+# House Rental System
+
+This project contains a simple house rental frontend and an Express/MongoDB backend.
+
+## Frontend
+
+Open `index.html` in a browser to use the demo pages.
+
+Pages included:
+
+- `index.html` - home page with featured houses
+- `search.html` - search and filter available houses
+- `login.html` - tenant login demo
+- `registrer.html` - registration page
+- `dashboard.html` - add, view, update, and delete demo listings
+
+The frontend uses `localStorage`, so it works before the backend is connected.
+
+## Backend
+
+Go into the backend folder:
+
+```bash
+cd backend
+```
+
+Install dependencies:
+
+```bash
+npm install
+```
+
+Start MongoDB on your computer, then run:
+
+```bash
+npm run dev
+```
+
+The API will run at:
+
+```text
+http://localhost:5000
+```
+
+## API Routes
+
+- `POST /api/auth/register`
+- `POST /api/auth/login`
+- `GET /api/properties`
+- `GET /api/properties/:id`
+- `POST /api/properties`
+- `PUT /api/properties/:id`
+- `DELETE /api/properties/:id`
+- `GET /api/bookings`
+- `POST /api/bookings`
+- `PATCH /api/bookings/:id/status`

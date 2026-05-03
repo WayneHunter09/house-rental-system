@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard | Nyumba Rentals</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html">Nyumba Rentals</a>
+    <nav class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="search.html">Search</a>
+      <button class="button small" id="logoutButton" type="button">Logout</button>
+    </nav>
+  </header>
+
+  <main class="page dashboard">
+    <section class="section compact">
+      <p class="eyebrow">Dashboard</p>
+      <h1 id="dashboardGreeting">Rental overview</h1>
+      <div class="stats-grid">
+        <div class="stat">
+          <span id="totalListings">0</span>
+          <p>Listings</p>
+        </div>
+        <div class="stat">
+          <span id="availableListings">0</span>
+          <p>Available</p>
+        </div>
+        <div class="stat">
+          <span id="savedListings">0</span>
+          <p>Saved</p>
+        </div>
+      </div>
+    </section>
+
+    <section class="section dashboard-layout">
+      <form class="panel form-stack" id="propertyForm">
+        <h2>Add property</h2>
+        <label for="propertyTitle">House title</label>
+        <input id="propertyTitle" type="text" required placeholder="Two bedroom apartment">
+        <label for="propertyLocation">Location</label>
+        <input id="propertyLocation" type="text" required placeholder="Kilimani">
+        <label for="propertyType">Type</label>
+        <select id="propertyType" required>
+          <option value="Apartment">Apartment</option>
+          <option value="Bungalow">Bungalow</option>
+          <option value="Bedsitter">Bedsitter</option>
+          <option value="Maisonette">Maisonette</option>
+        </select>
+        <label for="propertyRent">Monthly rent</label>
+        <input id="propertyRent" type="number" min="1" required placeholder="35000">
+        <label for="propertyDescription">Description</label>
+        <textarea id="propertyDescription" rows="4" placeholder="Key details about the house"></textarea>
+        <button class="button" type="submit">Save property</button>
+      </form>
+
+      <div class="panel">
+        <div class="result-bar">
+          <h2>Your listings</h2>
+          <button class="text-button" id="resetDemo" type="button">Reset demo</button>
+        </div>
+        <div class="listing-list" id="dashboardListings"></div>
+      </div>
+    </section>
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>

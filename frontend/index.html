@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Nyumba Rental System</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header class="site-header">
+    <a class="brand" href="index.html">Nyumba Rentals</a>
+    <nav class="nav-links">
+      <a href="index.html">Home</a>
+      <a href="search.html">Search</a>
+      <a href="login.html">Login</a>
+      <a class="button small" href="registrer.html">Register</a>
+    </nav>
+  </header>
+
+  <main>
+    <section class="hero">
+      <div class="hero-content">
+        <p class="eyebrow">House rental system</p>
+        <h1>Find a comfortable place to rent without the runaround.</h1>
+        <p>Browse available houses, compare prices and locations, then save your interest from one simple dashboard.</p>
+        <div class="hero-actions">
+          <a class="button" href="search.html">Search houses</a>
+          <a class="button secondary" href="login.html">Tenant login</a>
+        </div>
+      </div>
+      <form class="quick-search" id="quickSearchForm">
+        <label for="homeLocation">Location</label>
+        <input id="homeLocation" name="location" type="text" placeholder="Nairobi, Kisumu, Mombasa">
+        <label for="homeBudget">Maximum budget</label>
+        <input id="homeBudget" name="budget" type="number" min="0" placeholder="25000">
+        <button class="button" type="submit">Find rentals</button>
+      </form>
+    </section>
+
+    <section class="section">
+      <div class="section-title">
+        <p class="eyebrow">Featured rentals</p>
+        <h2>Available houses</h2>
+      </div>
+      <div class="property-grid" id="featuredProperties"></div>
+    </section>
+
+    <section class="section split">
+      <div>
+        <p class="eyebrow">For tenants</p>
+        <h2>Search by location, rent, and house type.</h2>
+        <p class="muted">Use clear filters to shortlist houses that match your budget and preferred neighborhood.</p>
+      </div>
+      <div>
+        <p class="eyebrow">For landlords</p>
+        <h2>Manage listings from the dashboard.</h2>
+        <p class="muted">Add property details, track interested tenants, and keep each listing organized.</p>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <span>Nyumba Rentals</span>
+    <span>Simple rental management for houses and apartments.</span>
+  </footer>
+
+  <script src="script.js"></script>
+</body>
+</html>
