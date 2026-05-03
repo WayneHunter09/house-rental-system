@@ -1,0 +1,16 @@
+services:
+  - type: web
+    name: house-rental-system
+    runtime: node
+    plan: free
+    rootDir: frontend/backend
+    buildCommand: npm install
+    startCommand: npm start
+    autoDeploy: true
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false
+      - key: JWT_SECRET
+        sync: false
