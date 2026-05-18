@@ -49,6 +49,10 @@ exports.getProperty = async (req, res, next) => {
 
 exports.createProperty = async (req, res, next) => {
   try {
+    if (req.user?.role !== "landlord" && req.user?.role !== "admin") {
+      return res.status(403).json({ message: "Only landlords can add houses" });
+    }
+
     const uploadedImages = getUploadedImagePaths(req.files);
     const images = [
       ...normalizeExistingImages(req.body.images),
@@ -69,6 +73,18 @@ exports.createProperty = async (req, res, next) => {
 
 exports.updateProperty = async (req, res, next) => {
   try {
+    const existingProperty = await Property.findById(req.params.id);
+    if (!existingProperty) {
+      return res.status(404).json({ message: "Property not found" });
+    }
+
+    if (
+      req.user?.role !== "admin" &&
+      String(existingProperty.landlord) !== String(req.user?.id)
+    ) {
+      return res.status(403).json({ message: "You can only update your own houses" });
+    }
+
     const update = { ...req.body };
     const uploadedImages = getUploadedImagePaths(req.files);
     const providedImages = [
@@ -85,10 +101,6 @@ exports.updateProperty = async (req, res, next) => {
       runValidators: true
     });
 
-    if (!property) {
-      return res.status(404).json({ message: "Property not found" });
-    }
-
     res.json(property);
   } catch (error) {
     next(error);
@@ -97,10 +109,19 @@ exports.updateProperty = async (req, res, next) => {
 
 exports.deleteProperty = async (req, res, next) => {
   try {
-    const property = await Property.findByIdAndDelete(req.params.id);
+    const property = await Property.findById(req.params.id);
     if (!property) {
       return res.status(404).json({ message: "Property not found" });
     }
+
+    if (
+      req.user?.role !== "admin" &&
+      String(property.landlord) !== String(req.user?.id)
+    ) {
+      return res.status(403).json({ message: "You can only delete your own houses" });
+    }
+
+    await property.deleteOne();
     res.json({ message: "Property deleted successfully" });
   } catch (error) {
     next(error);

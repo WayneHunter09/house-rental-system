@@ -514,8 +514,21 @@ textarea {
 
 .listing-actions {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
   margin-top: 0.5rem;
+}
+
+.status-pill {
+  align-items: center;
+  background: rgba(255, 212, 93, 0.12);
+  border: 1px solid rgba(255, 212, 93, 0.28);
+  border-radius: 999px;
+  color: var(--gold);
+  display: inline-flex;
+  font-size: 0.78rem;
+  font-weight: 900;
+  padding: 0.45rem 0.7rem;
 }
 
 .image-preview-grid {

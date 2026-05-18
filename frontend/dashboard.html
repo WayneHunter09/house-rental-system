@@ -23,20 +23,20 @@
       <div class="stats-grid">
         <div class="stat">
           <span id="totalListings">0</span>
-          <p>Listings</p>
+          <p id="totalListingsLabel">Listings</p>
         </div>
         <div class="stat">
           <span id="availableListings">0</span>
-          <p>Available</p>
+          <p id="availableListingsLabel">Available</p>
         </div>
         <div class="stat">
           <span id="savedListings">0</span>
-          <p>Saved</p>
+          <p id="savedListingsLabel">Bookings</p>
         </div>
       </div>
     </section>
 
-    <section class="section dashboard-layout">
+    <section class="section dashboard-layout" id="landlordDashboard">
       <form class="panel form-stack" id="propertyForm">
         <h2>Add property</h2>
         <label for="propertyTitle">House title</label>
@@ -66,6 +66,34 @@
           <button class="text-button" id="resetDemo" type="button">Refresh</button>
         </div>
         <div class="listing-list" id="dashboardListings"></div>
+      </div>
+    </section>
+
+    <section class="section dashboard-layout" id="tenantDashboard" hidden>
+      <div class="panel">
+        <div class="result-bar">
+          <h2>Available houses</h2>
+          <button class="text-button" id="refreshTenantHouses" type="button">Refresh</button>
+        </div>
+        <div class="property-grid" id="tenantAvailableHouses"></div>
+      </div>
+
+      <div class="panel">
+        <div class="result-bar">
+          <h2>Your bookings</h2>
+          <button class="text-button" id="refreshTenantBookings" type="button">Refresh</button>
+        </div>
+        <div class="listing-list" id="tenantBookings"></div>
+      </div>
+    </section>
+
+    <section class="section" id="landlordRequestsSection">
+      <div class="panel">
+        <div class="result-bar">
+          <h2>Tenant booking requests</h2>
+          <button class="text-button" id="refreshLandlordBookings" type="button">Refresh</button>
+        </div>
+        <div class="listing-list" id="landlordBookings"></div>
       </div>
     </section>
   </main>
