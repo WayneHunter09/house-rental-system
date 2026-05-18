@@ -54,6 +54,9 @@
         <input id="propertyRent" type="number" min="1" required placeholder="35000">
         <label for="propertyDescription">Description</label>
         <textarea id="propertyDescription" rows="4" placeholder="Key details about the house"></textarea>
+        <label for="propertyImages">House pictures</label>
+        <input id="propertyImages" type="file" accept="image/*" multiple>
+        <div class="image-preview-grid" id="propertyImagePreview"></div>
         <button class="button" type="submit">Save property</button>
       </form>
 

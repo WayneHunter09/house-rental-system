@@ -21,7 +21,7 @@ The frontend uses `localStorage`, so it works before the backend is connected.
 Go into the backend folder:
 
 ```bash
-cd backend
+cd frontend/backend
 ```
 
 Install dependencies:
@@ -62,6 +62,10 @@ Add these environment variables in Render:
 - `NODE_ENV` - `production`
 
 After deploy, open the Render URL. The same service serves the frontend pages and the backend API.
+
+Do not commit your real `.env` file. Add the real `MONGO_URI` and `JWT_SECRET` only in the Render dashboard.
+
+Uploaded property photos are stored on the server filesystem. On Render free web services, filesystem changes can be lost after redeploys or restarts, so use a persistent storage service like Cloudinary, S3, or Render Disk before relying on photo uploads in production.
 
 ## API Routes
 

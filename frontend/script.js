@@ -12,7 +12,8 @@ const sampleHouses = [
     type: "Apartment",
     rent: 45000,
     status: "Available",
-    description: "Modern apartment near shopping centers and public transport."
+    description: "Modern apartment near shopping centers and public transport.",
+    images: []
   },
   {
     id: "h2",
@@ -21,7 +22,8 @@ const sampleHouses = [
     type: "Bungalow",
     rent: 32000,
     status: "Available",
-    description: "Quiet compound with parking, water storage, and a small garden."
+    description: "Quiet compound with parking, water storage, and a small garden.",
+    images: []
   },
   {
     id: "h3",
@@ -30,7 +32,8 @@ const sampleHouses = [
     type: "Bedsitter",
     rent: 12000,
     status: "Available",
-    description: "Compact unit close to the main road and local shops."
+    description: "Compact unit close to the main road and local shops.",
+    images: []
   },
   {
     id: "h4",
@@ -39,7 +42,8 @@ const sampleHouses = [
     type: "Maisonette",
     rent: 85000,
     status: "Available",
-    description: "Spacious home with balcony, secure gate, and ocean breeze."
+    description: "Spacious home with balcony, secure gate, and ocean breeze.",
+    images: []
   }
 ];
 
@@ -64,18 +68,64 @@ function money(value) {
   return `KSh ${Number(value).toLocaleString("en-KE")}`;
 }
 
+function escapeHtml(value = "") {
+  return String(value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
+
+function getHouseImages(house) {
+  return Array.isArray(house.images) ? house.images.filter(Boolean) : [];
+}
+
+function readImageFiles(files) {
+  const imageFiles = [...files].filter((file) => file.type.startsWith("image/")).slice(0, 8);
+
+  return Promise.all(
+    imageFiles.map(
+      (file) =>
+        new Promise((resolve, reject) => {
+          const reader = new FileReader();
+          reader.addEventListener("load", () => resolve(reader.result));
+          reader.addEventListener("error", reject);
+          reader.readAsDataURL(file);
+        })
+    )
+  );
+}
+
+function renderImagePreview(images) {
+  const preview = document.getElementById("propertyImagePreview");
+  if (!preview) return;
+
+  preview.innerHTML = "";
+  images.forEach((image, index) => {
+    const img = document.createElement("img");
+    img.src = image;
+    img.alt = `Selected house picture ${index + 1}`;
+    preview.appendChild(img);
+  });
+}
+
 function createPropertyCard(house) {
   const savedIds = getSavedIds();
   const article = document.createElement("article");
   article.className = "property-card";
+  const images = getHouseImages(house);
+  const imageMarkup = images.length
+    ? `<img src="${escapeHtml(images[0])}" alt="${escapeHtml(house.title)}">`
+    : "";
   article.innerHTML = `
-    <div class="property-image"><span>${house.status}</span></div>
+    <div class="property-image">${imageMarkup}<span>${escapeHtml(house.status)}</span></div>
     <div class="property-body">
-      <h3>${house.title}</h3>
-      <div class="property-meta">${house.location} • ${house.type}</div>
+      <h3>${escapeHtml(house.title)}</h3>
+      <div class="property-meta">${escapeHtml(house.location)} &bull; ${escapeHtml(house.type)}</div>
       <div class="rent">${money(house.rent)} / month</div>
-      <p class="muted">${house.description || "No description provided."}</p>
-      <button class="button small" data-save-house="${house.id}" type="button">
+      <p class="muted">${escapeHtml(house.description || "No description provided.")}</p>
+      <button class="button small" data-save-house="${escapeHtml(house.id)}" type="button">
         ${savedIds.includes(house.id) ? "Saved" : "Save interest"}
       </button>
     </div>
@@ -219,14 +269,19 @@ function renderDashboardListings() {
   houses.forEach((house) => {
     const item = document.createElement("article");
     item.className = "listing-item";
+    const images = getHouseImages(house);
+    const imageMarkup = images.length
+      ? `<img src="${escapeHtml(images[0])}" alt="${escapeHtml(house.title)}">`
+      : `<span>No photo</span>`;
     item.innerHTML = `
-      <h3>${house.title}</h3>
-      <span class="property-meta">${house.location} • ${house.type}</span>
+      <div class="listing-photo">${imageMarkup}</div>
+      <h3>${escapeHtml(house.title)}</h3>
+      <span class="property-meta">${escapeHtml(house.location)} &bull; ${escapeHtml(house.type)}</span>
       <strong>${money(house.rent)} / month</strong>
-      <p class="muted">${house.description || "No description provided."}</p>
+      <p class="muted">${escapeHtml(house.description || "No description provided.")}</p>
       <div class="listing-actions">
-        <button class="button small" data-toggle-status="${house.id}" type="button">${house.status}</button>
-        <button class="text-button" data-delete-house="${house.id}" type="button">Delete</button>
+        <button class="button small" data-toggle-status="${escapeHtml(house.id)}" type="button">${escapeHtml(house.status)}</button>
+        <button class="text-button" data-delete-house="${escapeHtml(house.id)}" type="button">Delete</button>
       </div>
     `;
     container.appendChild(item);
@@ -236,10 +291,16 @@ function renderDashboardListings() {
 function setupDashboard() {
   const form = document.getElementById("propertyForm");
   if (!form) return;
+  let selectedImages = [];
 
   const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.user) || "null");
   const greeting = document.getElementById("dashboardGreeting");
   greeting.textContent = user ? `Hello, ${user.name}` : "Rental overview";
+
+  document.getElementById("propertyImages").addEventListener("change", async (event) => {
+    selectedImages = await readImageFiles(event.target.files);
+    renderImagePreview(selectedImages);
+  });
 
   form.addEventListener("submit", (event) => {
     event.preventDefault();
@@ -251,10 +312,13 @@ function setupDashboard() {
       type: document.getElementById("propertyType").value,
       rent: Number(document.getElementById("propertyRent").value),
       status: "Available",
-      description: document.getElementById("propertyDescription").value
+      description: document.getElementById("propertyDescription").value,
+      images: selectedImages
     });
     saveHouses(houses);
     form.reset();
+    selectedImages = [];
+    renderImagePreview(selectedImages);
     renderDashboardListings();
     updateDashboardStats();
   });

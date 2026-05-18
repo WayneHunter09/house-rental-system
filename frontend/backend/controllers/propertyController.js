@@ -1,5 +1,15 @@
 const Property = require("../models/Property");
 
+const getUploadedImagePaths = (files = []) =>
+  files.map((file) => `/uploads/properties/${file.filename}`);
+
+const normalizeExistingImages = (images) => {
+  if (!images) return [];
+  if (Array.isArray(images)) return images.filter(Boolean);
+
+  return [images].filter(Boolean);
+};
+
 exports.getProperties = async (req, res, next) => {
   try {
     const { location, type, maxRent } = req.query;
@@ -30,8 +40,16 @@ exports.getProperty = async (req, res, next) => {
 
 exports.createProperty = async (req, res, next) => {
   try {
+    const uploadedImages = getUploadedImagePaths(req.files);
+    const images = [
+      ...normalizeExistingImages(req.body.images),
+      ...normalizeExistingImages(req.body.imageUrls),
+      ...uploadedImages
+    ];
+
     const property = await Property.create({
       ...req.body,
+      images,
       landlord: req.user?.id
     });
     res.status(201).json(property);
@@ -42,7 +60,18 @@ exports.createProperty = async (req, res, next) => {
 
 exports.updateProperty = async (req, res, next) => {
   try {
-    const property = await Property.findByIdAndUpdate(req.params.id, req.body, {
+    const update = { ...req.body };
+    const uploadedImages = getUploadedImagePaths(req.files);
+    const providedImages = [
+      ...normalizeExistingImages(req.body.images),
+      ...normalizeExistingImages(req.body.imageUrls)
+    ];
+
+    if (uploadedImages.length || providedImages.length) {
+      update.images = [...providedImages, ...uploadedImages];
+    }
+
+    const property = await Property.findByIdAndUpdate(req.params.id, update, {
       new: true,
       runValidators: true
     });

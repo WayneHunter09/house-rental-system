@@ -26,6 +26,10 @@ const propertySchema = new mongoose.Schema(
       type: String,
       trim: true
     },
+    images: {
+      type: [String],
+      default: []
+    },
     status: {
       type: String,
       enum: ["Available", "Occupied"],
