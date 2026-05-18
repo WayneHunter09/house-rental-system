@@ -1,67 +1,52 @@
+const API_BASE = window.location.protocol === "file:" ? "http://localhost:5000/api" : "/api";
+const API_ORIGIN = window.location.protocol === "file:" ? "http://localhost:5000" : "";
+
 const STORAGE_KEYS = {
-  houses: "nyumba_houses",
+  token: "nyumba_token",
   user: "nyumba_user",
   saved: "nyumba_saved"
 };
 
-const sampleHouses = [
-  {
-    id: "h1",
-    title: "Two Bedroom Apartment",
-    location: "Kilimani, Nairobi",
-    type: "Apartment",
-    rent: 45000,
-    status: "Available",
-    description: "Modern apartment near shopping centers and public transport.",
-    images: []
-  },
-  {
-    id: "h2",
-    title: "Family Bungalow",
-    location: "Ruiru, Kiambu",
-    type: "Bungalow",
-    rent: 32000,
-    status: "Available",
-    description: "Quiet compound with parking, water storage, and a small garden.",
-    images: []
-  },
-  {
-    id: "h3",
-    title: "Affordable Bedsitter",
-    location: "Kahawa Wendani",
-    type: "Bedsitter",
-    rent: 12000,
-    status: "Available",
-    description: "Compact unit close to the main road and local shops.",
-    images: []
-  },
-  {
-    id: "h4",
-    title: "Four Bedroom Maisonette",
-    location: "Nyali, Mombasa",
-    type: "Maisonette",
-    rent: 85000,
-    status: "Available",
-    description: "Spacious home with balcony, secure gate, and ocean breeze.",
-    images: []
-  }
-];
-
-function getHouses() {
-  const stored = localStorage.getItem(STORAGE_KEYS.houses);
-  if (!stored) {
-    localStorage.setItem(STORAGE_KEYS.houses, JSON.stringify(sampleHouses));
-    return sampleHouses;
-  }
-  return JSON.parse(stored);
+function getToken() {
+  return localStorage.getItem(STORAGE_KEYS.token);
 }
 
-function saveHouses(houses) {
-  localStorage.setItem(STORAGE_KEYS.houses, JSON.stringify(houses));
+function getUser() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEYS.user) || "null");
 }
 
-function getSavedIds() {
-  return JSON.parse(localStorage.getItem(STORAGE_KEYS.saved) || "[]");
+function setSession(data) {
+  localStorage.setItem(STORAGE_KEYS.token, data.token);
+  localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(data.user));
+}
+
+function clearSession() {
+  localStorage.removeItem(STORAGE_KEYS.token);
+  localStorage.removeItem(STORAGE_KEYS.user);
+}
+
+function authHeaders() {
+  const token = getToken();
+  return token ? { Authorization: `Bearer ${token}` } : {};
+}
+
+async function apiRequest(path, options = {}) {
+  const response = await fetch(`${API_BASE}${path}`, {
+    ...options,
+    headers: {
+      ...authHeaders(),
+      ...(options.headers || {})
+    }
+  });
+
+  const contentType = response.headers.get("content-type") || "";
+  const data = contentType.includes("application/json") ? await response.json() : null;
+
+  if (!response.ok) {
+    throw new Error(data?.message || "Something went wrong. Please try again.");
+  }
+
+  return data;
 }
 
 function money(value) {
@@ -77,56 +62,69 @@ function escapeHtml(value = "") {
     .replace(/'/g, "&#039;");
 }
 
+function getHouseId(house) {
+  return house._id || house.id;
+}
+
 function getHouseImages(house) {
   return Array.isArray(house.images) ? house.images.filter(Boolean) : [];
 }
 
-function readImageFiles(files) {
-  const imageFiles = [...files].filter((file) => file.type.startsWith("image/")).slice(0, 8);
-
-  return Promise.all(
-    imageFiles.map(
-      (file) =>
-        new Promise((resolve, reject) => {
-          const reader = new FileReader();
-          reader.addEventListener("load", () => resolve(reader.result));
-          reader.addEventListener("error", reject);
-          reader.readAsDataURL(file);
-        })
-    )
-  );
+function getImageSource(image) {
+  if (!image) return "";
+  if (image.startsWith("data:") || image.startsWith("http")) return image;
+  return `${API_ORIGIN}${image}`;
 }
 
-function renderImagePreview(images) {
+function renderSelectedImagePreview(files) {
   const preview = document.getElementById("propertyImagePreview");
   if (!preview) return;
 
   preview.innerHTML = "";
-  images.forEach((image, index) => {
+  [...files].filter((file) => file.type.startsWith("image/")).slice(0, 8).forEach((file, index) => {
     const img = document.createElement("img");
-    img.src = image;
+    img.src = URL.createObjectURL(file);
     img.alt = `Selected house picture ${index + 1}`;
+    img.addEventListener("load", () => URL.revokeObjectURL(img.src), { once: true });
     preview.appendChild(img);
   });
 }
 
+function getSavedIds() {
+  return JSON.parse(localStorage.getItem(STORAGE_KEYS.saved) || "[]");
+}
+
+function setFormMessage(form, message, type = "error") {
+  let messageBox = form.querySelector(".form-message");
+  if (!messageBox) {
+    messageBox = document.createElement("p");
+    messageBox.className = "form-message";
+    form.appendChild(messageBox);
+  }
+
+  messageBox.textContent = message;
+  messageBox.dataset.type = type;
+}
+
 function createPropertyCard(house) {
+  const id = getHouseId(house);
   const savedIds = getSavedIds();
   const article = document.createElement("article");
   article.className = "property-card";
   const images = getHouseImages(house);
   const imageMarkup = images.length
-    ? `<img src="${escapeHtml(images[0])}" alt="${escapeHtml(house.title)}">`
+    ? `<img src="${escapeHtml(getImageSource(images[0]))}" alt="${escapeHtml(house.title)}">`
     : "";
+
   article.innerHTML = `
-    <div class="property-image">${imageMarkup}<span>${escapeHtml(house.status)}</span></div>
+    <div class="property-image">${imageMarkup}<span>${escapeHtml(house.status || "Available")}</span></div>
     <div class="property-body">
       <h3>${escapeHtml(house.title)}</h3>
       <div class="property-meta">${escapeHtml(house.location)} &bull; ${escapeHtml(house.type)}</div>
       <div class="rent">${money(house.rent)} / month</div>
       <p class="muted">${escapeHtml(house.description || "No description provided.")}</p>
-      <button class="button small" data-save-house="${escapeHtml(house.id)}" type="button">
-        ${savedIds.includes(house.id) ? "Saved" : "Save interest"}
+      <button class="button small" data-save-house="${escapeHtml(id)}" type="button">
+        ${savedIds.includes(id) ? "Interest sent" : "Send interest"}
       </button>
     </div>
   `;
@@ -146,36 +144,26 @@ function renderPropertyGrid(containerId, houses) {
   houses.forEach((house) => container.appendChild(createPropertyCard(house)));
 }
 
-function filterHouses(houses, location = "", type = "", maxRent = "") {
-  const query = location.trim().toLowerCase();
-  const budget = Number(maxRent);
-  return houses.filter((house) => {
-    const matchesLocation = !query || house.location.toLowerCase().includes(query);
-    const matchesType = !type || house.type === type;
-    const matchesRent = !budget || Number(house.rent) <= budget;
-    return matchesLocation && matchesType && matchesRent;
-  });
+async function loadProperties(params = {}) {
+  const query = new URLSearchParams();
+  if (params.location) query.set("location", params.location);
+  if (params.type) query.set("type", params.type);
+  if (params.maxRent) query.set("maxRent", params.maxRent);
+
+  const suffix = query.toString() ? `?${query.toString()}` : "";
+  return apiRequest(`/properties${suffix}`);
 }
 
-function handleSaveClick(event) {
-  const button = event.target.closest("[data-save-house]");
-  if (!button) return;
-
-  const id = button.dataset.saveHouse;
-  const saved = new Set(getSavedIds());
-  if (saved.has(id)) {
-    saved.delete(id);
-    button.textContent = "Save interest";
-  } else {
-    saved.add(id);
-    button.textContent = "Saved";
+async function setupHome() {
+  const featured = document.getElementById("featuredProperties");
+  if (featured) {
+    try {
+      const houses = await loadProperties();
+      renderPropertyGrid("featuredProperties", houses.slice(0, 3));
+    } catch (error) {
+      featured.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
+    }
   }
-  localStorage.setItem(STORAGE_KEYS.saved, JSON.stringify([...saved]));
-  updateDashboardStats();
-}
-
-function setupHome() {
-  renderPropertyGrid("featuredProperties", getHouses().slice(0, 3));
 
   const quickSearchForm = document.getElementById("quickSearchForm");
   if (!quickSearchForm) return;
@@ -189,7 +177,7 @@ function setupHome() {
   });
 }
 
-function setupSearch() {
+async function setupSearch() {
   const form = document.getElementById("searchForm");
   if (!form) return;
 
@@ -197,15 +185,23 @@ function setupSearch() {
   const locationInput = document.getElementById("searchLocation");
   const maxRentInput = document.getElementById("searchMaxRent");
   const typeInput = document.getElementById("searchType");
+  const results = document.getElementById("searchResults");
 
   locationInput.value = params.get("location") || "";
   maxRentInput.value = params.get("budget") || "";
 
-  const applyFilters = () => {
-    renderPropertyGrid(
-      "searchResults",
-      filterHouses(getHouses(), locationInput.value, typeInput.value, maxRentInput.value)
-    );
+  const applyFilters = async () => {
+    results.innerHTML = `<div class="empty-state">Loading houses...</div>`;
+    try {
+      const houses = await loadProperties({
+        location: locationInput.value,
+        type: typeInput.value,
+        maxRent: maxRentInput.value
+      });
+      renderPropertyGrid("searchResults", houses);
+    } catch (error) {
+      results.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
+    }
   };
 
   form.addEventListener("submit", (event) => {
@@ -215,7 +211,7 @@ function setupSearch() {
 
   document.getElementById("clearFilters").addEventListener("click", () => {
     form.reset();
-    renderPropertyGrid("searchResults", getHouses());
+    applyFilters();
   });
 
   applyFilters();
@@ -226,52 +222,77 @@ function setupAuth() {
   const loginForm = document.getElementById("loginForm");
 
   if (registerForm) {
-    registerForm.addEventListener("submit", (event) => {
+    registerForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const user = {
-        name: document.getElementById("registerName").value,
-        email: document.getElementById("registerEmail").value,
-        role: document.getElementById("registerRole").value
-      };
-      localStorage.setItem(STORAGE_KEYS.user, JSON.stringify(user));
-      window.location.href = "dashboard.html";
+      try {
+        const data = await apiRequest("/auth/register", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            name: document.getElementById("registerName").value,
+            email: document.getElementById("registerEmail").value,
+            role: document.getElementById("registerRole").value,
+            password: document.getElementById("registerPassword").value
+          })
+        });
+        setSession(data);
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        setFormMessage(registerForm, error.message);
+      }
     });
   }
 
   if (loginForm) {
-    loginForm.addEventListener("submit", (event) => {
+    loginForm.addEventListener("submit", async (event) => {
       event.preventDefault();
-      const email = document.getElementById("loginEmail").value;
-      localStorage.setItem(STORAGE_KEYS.user, JSON.stringify({ name: email.split("@")[0], email, role: "tenant" }));
-      window.location.href = "dashboard.html";
+      try {
+        const data = await apiRequest("/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            email: document.getElementById("loginEmail").value,
+            password: document.getElementById("loginPassword").value
+          })
+        });
+        setSession(data);
+        window.location.href = "dashboard.html";
+      } catch (error) {
+        setFormMessage(loginForm, error.message);
+      }
     });
   }
 }
 
-function updateDashboardStats() {
-  const houses = getHouses();
+async function updateDashboardStats(houses = null) {
   const total = document.getElementById("totalListings");
   const available = document.getElementById("availableListings");
   const saved = document.getElementById("savedListings");
   if (!total || !available || !saved) return;
 
-  total.textContent = houses.length;
-  available.textContent = houses.filter((house) => house.status === "Available").length;
+  const listings = houses || [];
+  total.textContent = listings.length;
+  available.textContent = listings.filter((house) => (house.status || "Available") === "Available").length;
   saved.textContent = getSavedIds().length;
 }
 
-function renderDashboardListings() {
+function renderDashboardListings(houses) {
   const container = document.getElementById("dashboardListings");
   if (!container) return;
 
-  const houses = getHouses();
   container.innerHTML = "";
+  if (!houses.length) {
+    container.innerHTML = `<div class="empty-state">No database listings yet. Add your first property.</div>`;
+    return;
+  }
+
   houses.forEach((house) => {
+    const id = getHouseId(house);
     const item = document.createElement("article");
     item.className = "listing-item";
     const images = getHouseImages(house);
     const imageMarkup = images.length
-      ? `<img src="${escapeHtml(images[0])}" alt="${escapeHtml(house.title)}">`
+      ? `<img src="${escapeHtml(getImageSource(images[0]))}" alt="${escapeHtml(house.title)}">`
       : `<span>No photo</span>`;
     item.innerHTML = `
       <div class="listing-photo">${imageMarkup}</div>
@@ -280,84 +301,144 @@ function renderDashboardListings() {
       <strong>${money(house.rent)} / month</strong>
       <p class="muted">${escapeHtml(house.description || "No description provided.")}</p>
       <div class="listing-actions">
-        <button class="button small" data-toggle-status="${escapeHtml(house.id)}" type="button">${escapeHtml(house.status)}</button>
-        <button class="text-button" data-delete-house="${escapeHtml(house.id)}" type="button">Delete</button>
+        <button class="button small" data-toggle-status="${escapeHtml(id)}" type="button">${escapeHtml(house.status || "Available")}</button>
+        <button class="text-button" data-delete-house="${escapeHtml(id)}" type="button">Delete</button>
       </div>
     `;
     container.appendChild(item);
   });
 }
 
-function setupDashboard() {
+async function loadMyListings() {
+  const houses = await apiRequest("/properties/mine");
+  renderDashboardListings(houses);
+  updateDashboardStats(houses);
+  return houses;
+}
+
+async function setupDashboard() {
   const form = document.getElementById("propertyForm");
   if (!form) return;
-  let selectedImages = [];
 
-  const user = JSON.parse(localStorage.getItem(STORAGE_KEYS.user) || "null");
+  const user = getUser();
+  if (!getToken()) {
+    window.location.href = "login.html";
+    return;
+  }
+
   const greeting = document.getElementById("dashboardGreeting");
   greeting.textContent = user ? `Hello, ${user.name}` : "Rental overview";
 
-  document.getElementById("propertyImages").addEventListener("change", async (event) => {
-    selectedImages = await readImageFiles(event.target.files);
-    renderImagePreview(selectedImages);
+  document.getElementById("propertyImages").addEventListener("change", (event) => {
+    renderSelectedImagePreview(event.target.files);
   });
 
-  form.addEventListener("submit", (event) => {
+  try {
+    await loadMyListings();
+  } catch (error) {
+    document.getElementById("dashboardListings").innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
+  }
+
+  form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    const houses = getHouses();
-    houses.unshift({
-      id: `h${Date.now()}`,
-      title: document.getElementById("propertyTitle").value,
-      location: document.getElementById("propertyLocation").value,
-      type: document.getElementById("propertyType").value,
-      rent: Number(document.getElementById("propertyRent").value),
-      status: "Available",
-      description: document.getElementById("propertyDescription").value,
-      images: selectedImages
+    const formData = new FormData();
+    formData.append("title", document.getElementById("propertyTitle").value);
+    formData.append("location", document.getElementById("propertyLocation").value);
+    formData.append("type", document.getElementById("propertyType").value);
+    formData.append("rent", document.getElementById("propertyRent").value);
+    formData.append("description", document.getElementById("propertyDescription").value);
+
+    [...document.getElementById("propertyImages").files].forEach((file) => {
+      formData.append("images", file);
     });
-    saveHouses(houses);
-    form.reset();
-    selectedImages = [];
-    renderImagePreview(selectedImages);
-    renderDashboardListings();
-    updateDashboardStats();
+
+    try {
+      await apiRequest("/properties", {
+        method: "POST",
+        body: formData
+      });
+      form.reset();
+      renderSelectedImagePreview([]);
+      await loadMyListings();
+      setFormMessage(form, "Property saved to the database.", "success");
+    } catch (error) {
+      setFormMessage(form, error.message);
+    }
   });
 
-  document.getElementById("dashboardListings").addEventListener("click", (event) => {
+  document.getElementById("dashboardListings").addEventListener("click", async (event) => {
     const deleteButton = event.target.closest("[data-delete-house]");
     const statusButton = event.target.closest("[data-toggle-status]");
-    let houses = getHouses();
 
-    if (deleteButton) {
-      houses = houses.filter((house) => house.id !== deleteButton.dataset.deleteHouse);
-      saveHouses(houses);
+    try {
+      if (deleteButton) {
+        await apiRequest(`/properties/${deleteButton.dataset.deleteHouse}`, { method: "DELETE" });
+      }
+
+      if (statusButton) {
+        const nextStatus = statusButton.textContent === "Available" ? "Occupied" : "Available";
+        await apiRequest(`/properties/${statusButton.dataset.toggleStatus}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ status: nextStatus })
+        });
+      }
+
+      await loadMyListings();
+    } catch (error) {
+      document.getElementById("dashboardListings").insertAdjacentHTML(
+        "afterbegin",
+        `<div class="empty-state">${escapeHtml(error.message)}</div>`
+      );
     }
-
-    if (statusButton) {
-      houses = houses.map((house) => {
-        if (house.id !== statusButton.dataset.toggleStatus) return house;
-        return { ...house, status: house.status === "Available" ? "Occupied" : "Available" };
-      });
-      saveHouses(houses);
-    }
-
-    renderDashboardListings();
-    updateDashboardStats();
   });
 
   document.getElementById("logoutButton").addEventListener("click", () => {
-    localStorage.removeItem(STORAGE_KEYS.user);
+    clearSession();
     window.location.href = "login.html";
   });
 
+  document.getElementById("resetDemo").textContent = "Refresh";
   document.getElementById("resetDemo").addEventListener("click", () => {
-    saveHouses(sampleHouses);
-    localStorage.setItem(STORAGE_KEYS.saved, "[]");
-    renderDashboardListings();
-    updateDashboardStats();
+    loadMyListings();
   });
+}
 
-  renderDashboardListings();
+async function handleSaveClick(event) {
+  const button = event.target.closest("[data-save-house]");
+  if (!button) return;
+
+  if (!getToken()) {
+    window.location.href = "login.html";
+    return;
+  }
+
+  const id = button.dataset.saveHouse;
+  const saved = new Set(getSavedIds());
+  if (saved.has(id)) {
+    button.textContent = "Interest sent";
+    return;
+  } else {
+    button.disabled = true;
+    button.textContent = "Sending...";
+    try {
+      await apiRequest("/bookings", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          property: id,
+          message: "I am interested in this rental."
+        })
+      });
+      saved.add(id);
+      button.textContent = "Interest sent";
+    } catch (error) {
+      button.textContent = error.message;
+    } finally {
+      button.disabled = false;
+    }
+  }
+  localStorage.setItem(STORAGE_KEYS.saved, JSON.stringify([...saved]));
   updateDashboardStats();
 }
 

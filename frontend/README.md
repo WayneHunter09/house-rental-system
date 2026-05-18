@@ -4,7 +4,7 @@ This project contains a simple house rental frontend and an Express/MongoDB back
 
 ## Frontend
 
-Open `index.html` in a browser to use the demo pages.
+Run the backend and open the Render/local server URL to use the database-backed pages.
 
 Pages included:
 
@@ -14,7 +14,7 @@ Pages included:
 - `registrer.html` - registration page
 - `dashboard.html` - add, view, update, and delete demo listings
 
-The frontend uses `localStorage`, so it works before the backend is connected.
+The frontend uses the backend API for users, properties, uploads, and booking interest. It only keeps the login token and a small client-side marker for already-clicked interest buttons in `localStorage`.
 
 ## Backend
 

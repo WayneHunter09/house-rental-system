@@ -26,6 +26,15 @@ exports.getProperties = async (req, res, next) => {
   }
 };
 
+exports.getMyProperties = async (req, res, next) => {
+  try {
+    const properties = await Property.find({ landlord: req.user.id }).sort({ createdAt: -1 });
+    res.json(properties);
+  } catch (error) {
+    next(error);
+  }
+};
+
 exports.getProperty = async (req, res, next) => {
   try {
     const property = await Property.findById(req.params.id);

@@ -2,6 +2,7 @@ const express = require("express");
 const {
   createProperty,
   deleteProperty,
+  getMyProperties,
   getProperties,
   getProperty,
   updateProperty
@@ -12,6 +13,7 @@ const { uploadPropertyImages } = require("../middleware/uploadMiddleware");
 const router = express.Router();
 
 router.get("/", getProperties);
+router.get("/mine", protect, getMyProperties);
 router.get("/:id", getProperty);
 router.post("/", protect, uploadPropertyImages.array("images", 8), createProperty);
 router.put("/:id", protect, uploadPropertyImages.array("images", 8), updateProperty);
