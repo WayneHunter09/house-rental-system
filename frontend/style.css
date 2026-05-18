@@ -135,8 +135,22 @@ button {
   display: grid;
   gap: 2rem;
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.75fr);
-  min-height: calc(100vh - 72px);
+  min-height: calc(92vh - 72px);
   padding: 7vw 6vw 4vw;
+  position: relative;
+}
+
+.hero::after {
+  background:
+    linear-gradient(90deg, rgba(67, 196, 119, 0.32), transparent),
+    linear-gradient(180deg, transparent, rgba(45, 224, 194, 0.28));
+  border-radius: 999px;
+  bottom: 2rem;
+  content: "";
+  height: 2px;
+  left: 6vw;
+  position: absolute;
+  right: 6vw;
 }
 
 .hero-content {
@@ -163,6 +177,58 @@ button {
   flex-wrap: wrap;
   gap: 0.75rem;
   margin-top: 1.5rem;
+}
+
+.home-highlights {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  margin-top: 2rem;
+  max-width: 760px;
+}
+
+.home-highlights div {
+  backdrop-filter: blur(14px);
+  background: rgba(3, 15, 13, 0.55);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 0.9rem;
+}
+
+.home-highlights strong,
+.home-highlights span {
+  display: block;
+}
+
+.home-highlights strong {
+  color: var(--gold);
+  font-size: 0.95rem;
+}
+
+.home-highlights span {
+  color: var(--muted);
+  font-size: 0.86rem;
+  margin-top: 0.2rem;
+}
+
+.hero-side {
+  align-self: center;
+  display: grid;
+  gap: 1rem;
+}
+
+.hero-photo {
+  aspect-ratio: 16 / 10;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+
+.hero-photo img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
 }
 
 .quick-search,
@@ -251,7 +317,7 @@ textarea {
 .property-grid {
   display: grid;
   gap: 1rem;
-  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
 }
 
 .property-card {
@@ -262,11 +328,12 @@ textarea {
 
 .property-image {
   align-items: flex-end;
-  aspect-ratio: 4 / 3;
+  aspect-ratio: 16 / 9;
   background:
     linear-gradient(145deg, rgba(25, 76, 54, 0.92), rgba(5, 20, 18, 0.88)),
     url("assets/aquarium-garden.jpg") center / cover;
   display: flex;
+  max-height: 170px;
   overflow: hidden;
   padding: 1rem;
   position: relative;
@@ -322,11 +389,18 @@ textarea {
 }
 
 .split {
-  background: rgba(3, 15, 13, 0.46);
+  background:
+    linear-gradient(135deg, rgba(3, 15, 13, 0.76), rgba(16, 51, 43, 0.54)),
+    radial-gradient(circle at 20% 20%, rgba(255, 212, 93, 0.12), transparent 28%);
   border-top: 1px solid var(--line);
   display: grid;
   gap: 2rem;
   grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.split > div {
+  border-left: 2px solid rgba(67, 196, 119, 0.45);
+  padding-left: 1rem;
 }
 
 .footer {
@@ -576,6 +650,10 @@ textarea {
   .split,
   .dashboard-layout,
   .filters {
+    grid-template-columns: 1fr;
+  }
+
+  .home-highlights {
     grid-template-columns: 1fr;
   }
 
