@@ -290,7 +290,11 @@ async function updateDashboardStats(houses = null) {
 
   const user = getUser();
   const listings = houses || [];
+  const monthlyValue = listings.reduce((sum, house) => sum + Number(house.rent || 0), 0);
   total.textContent = listings.length;
+  document.getElementById("roleMetric").textContent = user?.role ? user.role : "-";
+  document.getElementById("priceMetric").textContent = money(monthlyValue);
+  document.getElementById("accountMetric").textContent = "Active";
 
   if (user?.role === "tenant") {
     const bookings = await loadBookings().catch(() => []);
@@ -428,6 +432,16 @@ async function setupDashboard() {
 
   const greeting = document.getElementById("dashboardGreeting");
   greeting.textContent = user ? `Hello, ${user.name}` : "Rental overview";
+  document.querySelectorAll("[data-role-link='landlord']").forEach((link) => {
+    link.hidden = user?.role === "tenant";
+  });
+  const dateLabel = document.getElementById("dashboardDate");
+  if (dateLabel) {
+    dateLabel.textContent = new Date().toLocaleString(undefined, {
+      dateStyle: "medium",
+      timeStyle: "short"
+    });
+  }
 
   const landlordDashboard = document.getElementById("landlordDashboard");
   const tenantDashboard = document.getElementById("tenantDashboard");
