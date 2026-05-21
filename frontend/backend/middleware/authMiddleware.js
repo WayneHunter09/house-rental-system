@@ -23,3 +23,11 @@ exports.protect = async (req, res, next) => {
     res.status(401).json({ message: "Invalid or expired token" });
   }
 };
+
+exports.authorize = (...roles) => (req, res, next) => {
+  if (!req.user || !roles.includes(req.user.role)) {
+    return res.status(403).json({ message: "You are not allowed to perform this action" });
+  }
+
+  next();
+};

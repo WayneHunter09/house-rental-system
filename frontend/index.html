@@ -3,17 +3,18 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nyumba Rental System</title>
+  <title>Nyumba Rentals | Find Houses Faster</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
   <header class="site-header">
     <a class="brand" href="index.html">Nyumba Rentals</a>
-    <nav class="nav-links">
+    <nav class="nav-links" aria-label="Main navigation">
       <a href="index.html">Home</a>
-      <a href="search.html">Search</a>
+      <a href="houses.html">Houses</a>
+      <a href="about.html">About</a>
+      <a href="contacts.html">Contacts</a>
       <a href="login.html">Login</a>
-      <a class="button small" href="registrer.html">Register</a>
     </nav>
   </header>
 
@@ -21,66 +22,75 @@
     <section class="hero">
       <div class="hero-content">
         <p class="eyebrow">House rental system</p>
-        <h1>Find a comfortable place to rent without the runaround.</h1>
-        <p>Browse available houses, compare prices and locations, then save your interest from one simple dashboard.</p>
-        <div class="hero-actions">
-          <a class="button" href="search.html">Search houses</a>
-          <a class="button secondary" href="login.html">Tenant login</a>
-        </div>
-        <div class="home-highlights" aria-label="Rental highlights">
-          <div>
-            <strong>Verified photos</strong>
-            <span>See the house before booking.</span>
-          </div>
-          <div>
-            <strong>Landlord listings</strong>
-            <span>Fresh details direct from owners.</span>
-          </div>
-          <div>
-            <strong>Easy booking</strong>
-            <span>Send interest from your account.</span>
-          </div>
-        </div>
-      </div>
-      <div class="hero-side">
-        <div class="hero-photo">
-          <img src="assets/aquarium-garden.jpg" alt="Decorative aquarium garden">
-        </div>
-        <form class="quick-search" id="quickSearchForm">
-          <label for="homeLocation">Location</label>
-          <input id="homeLocation" name="location" type="text" placeholder="Nairobi, Kisumu, Mombasa">
-          <label for="homeBudget">Maximum budget</label>
-          <input id="homeBudget" name="budget" type="number" min="0" placeholder="25000">
-          <button class="button" type="submit">Find rentals</button>
+        <h1>Find the right rental with clear details and real contacts.</h1>
+        <p>Search houses by location, rent, and type, then save your favorites or contact landlords directly.</p>
+        <form class="search-panel" id="homeSearchForm">
+          <input id="homeLocation" type="text" placeholder="Location">
+          <input id="homeMinRent" type="number" min="0" placeholder="Min price">
+          <input id="homeMaxRent" type="number" min="0" placeholder="Max price">
+          <select id="homeType">
+            <option value="">House type</option>
+            <option value="Apartment">Apartment</option>
+            <option value="Bungalow">Bungalow</option>
+            <option value="Bedsitter">Bedsitter</option>
+            <option value="Maisonette">Maisonette</option>
+          </select>
+          <button class="button" type="submit">Search houses</button>
         </form>
+      </div>
+      <div class="hero-photo">
+        <img src="assets/aquarium-garden.jpg" alt="Modern rental home interior">
       </div>
     </section>
 
     <section class="section">
       <div class="section-title">
-        <p class="eyebrow">Featured rentals</p>
-        <h2>Available houses</h2>
+        <p class="eyebrow">Featured houses</p>
+        <h2>Fresh homes to explore</h2>
       </div>
-      <div class="property-grid" id="featuredProperties"></div>
+      <div class="house-grid" id="featuredProperties"></div>
     </section>
 
-    <section class="section split">
-      <div>
-        <p class="eyebrow">For tenants</p>
-        <h2>Search by location, rent, and house type.</h2>
-        <p class="muted">Use clear filters to shortlist houses that match your budget and preferred neighborhood.</p>
+    <section class="section feature-band">
+      <article>
+        <h2>For tenants</h2>
+        <p>Create an account, search houses, view details, save favorites, and contact landlords directly.</p>
+      </article>
+      <article>
+        <h2>For landlords</h2>
+        <p>Register, add house listings, upload photos, edit or delete listings, and manage your rental presence.</p>
+      </article>
+      <article>
+        <h2>For admins</h2>
+        <p>Manage users, listings, reports, and moderation from one dashboard.</p>
+      </article>
+    </section>
+
+    <section class="section testimonials">
+      <div class="section-title">
+        <p class="eyebrow">Testimonials</p>
+        <h2>People rent with more confidence</h2>
       </div>
-      <div>
-        <p class="eyebrow">For landlords</p>
-        <h2>Manage listings from the dashboard.</h2>
-        <p class="muted">Add property details, track interested tenants, and keep each listing organized.</p>
+      <div class="testimonial-grid">
+        <blockquote>“I found houses in my budget without calling five different agents first.”<span>- Amina, tenant</span></blockquote>
+        <blockquote>“Uploading photos and updating my listing is simple enough to do from my phone.”<span>- Brian, landlord</span></blockquote>
+        <blockquote>“The dashboard gives us the basics we need to keep listings clean.”<span>- Nyumba admin team</span></blockquote>
       </div>
+    </section>
+
+    <section class="section contact-preview">
+      <div>
+        <p class="eyebrow">Contacts</p>
+        <h2>Need platform support?</h2>
+        <p class="muted">Reach the Nyumba Rentals team for help, or open a house detail page to contact that landlord directly.</p>
+      </div>
+      <a class="button" href="contacts.html">Contact us</a>
     </section>
   </main>
 
   <footer class="footer">
-    <span>Nyumba Rentals</span>
-    <span>Simple rental management for houses and apartments.</span>
+    <strong>Nyumba Rentals</strong>
+    <span>Simple house rental management for tenants, landlords, and admins.</span>
   </footer>
 
   <script src="script.js"></script>

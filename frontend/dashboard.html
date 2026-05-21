@@ -7,136 +7,26 @@
   <link rel="stylesheet" href="style.css">
 </head>
 <body class="dashboard-page">
-  <div class="dashboard-shell">
-    <aside class="dashboard-sidebar">
-      <a class="dashboard-logo" href="index.html">
-        <span>NR</span>
-        <strong>Nyumba Rentals</strong>
-        <small>House rental management</small>
-      </a>
+  <header class="site-header dashboard-header">
+    <a class="brand" href="index.html">Nyumba Rentals</a>
+    <nav class="nav-links" aria-label="Dashboard navigation">
+      <a href="index.html">Home</a>
+      <a href="houses.html">Houses</a>
+      <a href="dashboard.html">Dashboard</a>
+      <button class="text-button" id="logoutButton" type="button">Logout</button>
+    </nav>
+  </header>
 
-      <nav class="sidebar-nav" aria-label="Dashboard navigation">
-        <a class="active" href="dashboard.html"><span>Dashboard</span></a>
-        <a href="search.html"><span>Available Houses</span></a>
-        <a href="#tenantDashboard"><span>Bookings</span></a>
-        <a href="#landlordDashboard" data-role-link="landlord"><span>House Listings</span></a>
-        <a href="#landlordRequestsSection" data-role-link="landlord"><span>Requests</span></a>
-        <a href="index.html"><span>Home Page</span></a>
-      </nav>
-    </aside>
+  <main class="dashboard-main">
+    <section class="dashboard-hero">
+      <p class="eyebrow">Dashboard</p>
+      <h1 id="dashboardGreeting">Rental dashboard</h1>
+      <p id="dashboardRole" class="muted">Loading your workspace...</p>
+    </section>
 
-    <main class="dashboard-main">
-      <header class="dashboard-topbar">
-        <div>
-          <p class="eyebrow">Dashboard</p>
-          <h1 id="dashboardGreeting">Rental overview</h1>
-        </div>
-        <div class="topbar-actions">
-          <span class="dashboard-date" id="dashboardDate">Today</span>
-          <select aria-label="Select language">
-            <option>Select Language</option>
-            <option>English</option>
-            <option>Kiswahili</option>
-          </select>
-          <button class="button small" id="logoutButton" type="button">Logout</button>
-        </div>
-      </header>
-
-      <section class="dashboard-summary" aria-label="Dashboard summary">
-        <div class="stat metric-card metric-blue">
-          <div class="metric-icon">H</div>
-          <span id="totalListings">0</span>
-          <p id="totalListingsLabel">Listings</p>
-        </div>
-        <div class="stat metric-card metric-gold">
-          <div class="metric-icon">A</div>
-          <span id="availableListings">0</span>
-          <p id="availableListingsLabel">Available</p>
-        </div>
-        <div class="stat metric-card metric-green">
-          <div class="metric-icon">B</div>
-          <span id="savedListings">0</span>
-          <p id="savedListingsLabel">Bookings</p>
-        </div>
-        <div class="stat metric-card metric-red">
-          <div class="metric-icon">R</div>
-          <span id="roleMetric">-</span>
-          <p>Account type</p>
-        </div>
-        <div class="stat metric-card metric-teal">
-          <div class="metric-icon">P</div>
-          <span id="priceMetric">KSh 0</span>
-          <p>Monthly value</p>
-        </div>
-        <div class="stat metric-card metric-gray">
-          <div class="metric-icon">U</div>
-          <span id="accountMetric">Active</span>
-          <p>Account status</p>
-        </div>
-      </section>
-
-      <section class="dashboard-content dashboard-layout" id="landlordDashboard" hidden>
-        <form class="panel form-stack" id="propertyForm">
-          <h2>Add property</h2>
-          <label for="propertyTitle">House title</label>
-          <input id="propertyTitle" type="text" required placeholder="Two bedroom apartment">
-          <label for="propertyLocation">Location</label>
-          <input id="propertyLocation" type="text" required placeholder="Kilimani">
-          <label for="propertyType">Type</label>
-          <select id="propertyType" required>
-            <option value="Apartment">Apartment</option>
-            <option value="Bungalow">Bungalow</option>
-            <option value="Bedsitter">Bedsitter</option>
-            <option value="Maisonette">Maisonette</option>
-          </select>
-          <label for="propertyRent">Monthly rent</label>
-          <input id="propertyRent" type="number" min="1" required placeholder="35000">
-          <label for="propertyDescription">Description</label>
-          <textarea id="propertyDescription" rows="4" placeholder="Key details about the house"></textarea>
-          <label for="propertyImages">House pictures</label>
-          <input id="propertyImages" type="file" accept="image/*" multiple>
-          <div class="image-preview-grid" id="propertyImagePreview"></div>
-          <button class="button" type="submit">Save property</button>
-        </form>
-
-        <div class="panel">
-          <div class="result-bar">
-            <h2>Your listings</h2>
-            <button class="text-button" id="resetDemo" type="button">Refresh</button>
-          </div>
-          <div class="listing-list" id="dashboardListings"></div>
-        </div>
-      </section>
-
-      <section class="dashboard-content dashboard-layout" id="tenantDashboard" hidden>
-        <div class="panel">
-          <div class="result-bar">
-            <h2>Available houses</h2>
-            <button class="text-button" id="refreshTenantHouses" type="button">Refresh</button>
-          </div>
-          <div class="property-grid" id="tenantAvailableHouses"></div>
-        </div>
-
-        <div class="panel">
-          <div class="result-bar">
-            <h2>Your bookings</h2>
-            <button class="text-button" id="refreshTenantBookings" type="button">Refresh</button>
-          </div>
-          <div class="listing-list" id="tenantBookings"></div>
-        </div>
-      </section>
-
-      <section class="dashboard-content" id="landlordRequestsSection" hidden>
-        <div class="panel">
-          <div class="result-bar">
-            <h2>Tenant booking requests</h2>
-            <button class="text-button" id="refreshLandlordBookings" type="button">Refresh</button>
-          </div>
-          <div class="listing-list" id="landlordBookings"></div>
-        </div>
-      </section>
-    </main>
-  </div>
+    <section class="stats-grid" id="dashboardStats"></section>
+    <section class="dashboard-workspace" id="dashboardWorkspace"></section>
+  </main>
 
   <script src="script.js"></script>
 </body>

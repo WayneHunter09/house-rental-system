@@ -12,7 +12,8 @@ function createToken(user) {
 
 exports.register = async (req, res, next) => {
   try {
-    const { name, email, password, role, phone } = req.body;
+    const { name, email, password, phone, location } = req.body;
+    const role = req.body.role === "landlord" ? "landlord" : "tenant";
 
     const existingUser = await User.findOne({ email });
     if (existingUser) {
@@ -25,13 +26,21 @@ exports.register = async (req, res, next) => {
       email,
       password: hashedPassword,
       role,
-      phone
+      phone,
+      location
     });
 
     res.status(201).json({
       message: "User registered successfully",
       token: createToken(user),
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        location: user.location
+      }
     });
   } catch (error) {
     next(error);
@@ -50,7 +59,14 @@ exports.login = async (req, res, next) => {
     res.json({
       message: "Login successful",
       token: createToken(user),
-      user: { id: user._id, name: user.name, email: user.email, role: user.role }
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+        phone: user.phone,
+        location: user.location
+      }
     });
   } catch (error) {
     next(error);

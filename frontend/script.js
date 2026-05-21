@@ -3,9 +3,10 @@ const API_ORIGIN = window.location.protocol === "file:" ? "http://localhost:5000
 
 const STORAGE_KEYS = {
   token: "nyumba_token",
-  user: "nyumba_user",
-  saved: "nyumba_saved"
+  user: "nyumba_user"
 };
+
+const HOUSE_TYPES = ["Apartment", "Bungalow", "Bedsitter", "Maisonette"];
 
 function getToken() {
   return localStorage.getItem(STORAGE_KEYS.token);
@@ -38,7 +39,6 @@ async function apiRequest(path, options = {}) {
       ...(options.headers || {})
     }
   });
-
   const contentType = response.headers.get("content-type") || "";
   const data = contentType.includes("application/json") ? await response.json() : null;
 
@@ -50,7 +50,7 @@ async function apiRequest(path, options = {}) {
 }
 
 function money(value) {
-  return `KSh ${Number(value).toLocaleString("en-KE")}`;
+  return `KSh ${Number(value || 0).toLocaleString("en-KE")}`;
 }
 
 function escapeHtml(value = "") {
@@ -63,43 +63,14 @@ function escapeHtml(value = "") {
 }
 
 function getHouseId(house) {
-  return house._id || house.id;
-}
-
-function getHouseImages(house) {
-  return Array.isArray(house.images) ? house.images.filter(Boolean) : [];
+  return house?._id || house?.id || "";
 }
 
 function getImageSource(image) {
-  if (!image) return "";
+  if (!image) return "assets/aquarium-garden.jpg";
+  if (image.startsWith("assets/")) return image;
   if (image.startsWith("data:") || image.startsWith("http")) return image;
   return `${API_ORIGIN}${image}`;
-}
-
-function renderSelectedImagePreview(files) {
-  const preview = document.getElementById("propertyImagePreview");
-  if (!preview) return;
-
-  preview.innerHTML = "";
-  [...files].filter((file) => file.type.startsWith("image/")).slice(0, 8).forEach((file, index) => {
-    const img = document.createElement("img");
-    img.src = URL.createObjectURL(file);
-    img.alt = `Selected house picture ${index + 1}`;
-    img.addEventListener("load", () => URL.revokeObjectURL(img.src), { once: true });
-    preview.appendChild(img);
-  });
-}
-
-function getSavedIds() {
-  return JSON.parse(localStorage.getItem(STORAGE_KEYS.saved) || "[]");
-}
-
-function getBookingProperty(booking) {
-  return booking.property || {};
-}
-
-function getBookingId(booking) {
-  return booking._id || booking.id;
 }
 
 function setFormMessage(form, message, type = "error") {
@@ -109,114 +80,130 @@ function setFormMessage(form, message, type = "error") {
     messageBox.className = "form-message";
     form.appendChild(messageBox);
   }
-
   messageBox.textContent = message;
   messageBox.dataset.type = type;
 }
 
-function createPropertyCard(house) {
+function renderHouseCard(house, favoriteIds = new Set()) {
   const id = getHouseId(house);
-  const savedIds = getSavedIds();
+  const images = Array.isArray(house.images) ? house.images : [];
+  const landlord = house.landlord || {};
   const user = getUser();
-  const canBook = !user || user.role === "tenant";
+  const canFavorite = user?.role === "tenant";
+  const isFavorite = favoriteIds.has(id);
   const article = document.createElement("article");
-  article.className = "property-card";
-  const images = getHouseImages(house);
-  const imageMarkup = images.length
-    ? `<img src="${escapeHtml(getImageSource(images[0]))}" alt="${escapeHtml(house.title)}">`
-    : "";
-
+  article.className = "house-card";
   article.innerHTML = `
-    <div class="property-image">${imageMarkup}<span>${escapeHtml(house.status || "Available")}</span></div>
-    <div class="property-body">
-      <h3>${escapeHtml(house.title)}</h3>
-      <div class="property-meta">${escapeHtml(house.location)} &bull; ${escapeHtml(house.type)}</div>
-      <div class="rent">${money(house.rent)} / month</div>
-      <p class="muted">${escapeHtml(house.description || "No description provided.")}</p>
-      ${
-        canBook
-          ? `<button class="button small" data-save-house="${escapeHtml(id)}" type="button">
-              ${savedIds.includes(id) ? "Booked" : "Book house"}
-            </button>`
-          : ""
-      }
+    <a class="house-image" href="house.html?id=${escapeHtml(id)}">
+      <img src="${escapeHtml(getImageSource(images[0]))}" alt="${escapeHtml(house.title || "Rental house")}">
+      <span>${escapeHtml(house.status || "Available")}</span>
+    </a>
+    <div class="house-body">
+      <h3>${escapeHtml(house.title || "Rental house")}</h3>
+      <p class="muted">${escapeHtml(house.location || "")} &bull; ${escapeHtml(house.type || "")}</p>
+      <strong>${money(house.rent)} / month</strong>
+      <p>${escapeHtml((house.description || "No description provided.").slice(0, 110))}</p>
+      <div class="card-actions">
+        <a class="button small" href="house.html?id=${escapeHtml(id)}">View details</a>
+        ${
+          canFavorite
+            ? `<button class="text-button" data-favorite="${escapeHtml(id)}" data-saved="${isFavorite}" type="button">${isFavorite ? "Saved" : "Save"}</button>`
+            : ""
+        }
+      </div>
+      <small class="muted">${landlord.name ? `Landlord: ${escapeHtml(landlord.name)}` : ""}</small>
     </div>
   `;
   return article;
-}
-
-function renderPropertyGrid(containerId, houses) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
-
-  container.innerHTML = "";
-  if (!houses.length) {
-    container.innerHTML = `<div class="empty-state">No houses match your search.</div>`;
-    return;
-  }
-
-  houses.forEach((house) => container.appendChild(createPropertyCard(house)));
 }
 
 async function loadProperties(params = {}) {
   const query = new URLSearchParams();
   if (params.location) query.set("location", params.location);
   if (params.type) query.set("type", params.type);
+  if (params.minRent) query.set("minRent", params.minRent);
   if (params.maxRent) query.set("maxRent", params.maxRent);
-
+  if (params.featured) query.set("featured", "1");
   const suffix = query.toString() ? `?${query.toString()}` : "";
   return apiRequest(`/properties${suffix}`);
 }
 
-async function loadBookings() {
-  return apiRequest("/bookings");
+async function loadFavoriteIds() {
+  if (getUser()?.role !== "tenant") return new Set();
+  try {
+    const favorites = await apiRequest("/favorites");
+    return new Set(favorites.map((favorite) => getHouseId(favorite.property)).filter(Boolean));
+  } catch {
+    return new Set();
+  }
 }
 
-async function setupHome() {
-  const featured = document.getElementById("featuredProperties");
-  if (featured) {
-    try {
-      const houses = await loadProperties();
-      renderPropertyGrid("featuredProperties", houses.slice(0, 3));
-    } catch (error) {
-      featured.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
-    }
+async function renderHouseGrid(containerId, houses) {
+  const container = document.getElementById(containerId);
+  if (!container) return;
+
+  container.innerHTML = "";
+  if (!houses.length) {
+    container.innerHTML = `<div class="empty-state">No houses found.</div>`;
+    return;
   }
 
-  const quickSearchForm = document.getElementById("quickSearchForm");
-  if (!quickSearchForm) return;
+  const favoriteIds = await loadFavoriteIds();
+  houses.forEach((house) => container.appendChild(renderHouseCard(house, favoriteIds)));
+}
 
-  quickSearchForm.addEventListener("submit", (event) => {
+function setupHome() {
+  const featured = document.getElementById("featuredProperties");
+  if (featured) {
+    loadProperties({ featured: true })
+      .then((houses) => renderHouseGrid("featuredProperties", houses))
+      .catch((error) => {
+        featured.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
+      });
+  }
+
+  const form = document.getElementById("homeSearchForm");
+  if (!form) return;
+
+  form.addEventListener("submit", (event) => {
     event.preventDefault();
-    const location = document.getElementById("homeLocation").value;
-    const budget = document.getElementById("homeBudget").value;
-    const params = new URLSearchParams({ location, budget });
-    window.location.href = `search.html?${params.toString()}`;
+    const params = new URLSearchParams({
+      location: document.getElementById("homeLocation").value,
+      minRent: document.getElementById("homeMinRent").value,
+      maxRent: document.getElementById("homeMaxRent").value,
+      type: document.getElementById("homeType").value
+    });
+    window.location.href = `houses.html?${params.toString()}`;
   });
 }
 
-async function setupSearch() {
-  const form = document.getElementById("searchForm");
+function setupHouses() {
+  const form = document.getElementById("houseSearchForm");
   if (!form) return;
 
   const params = new URLSearchParams(window.location.search);
-  const locationInput = document.getElementById("searchLocation");
-  const maxRentInput = document.getElementById("searchMaxRent");
-  const typeInput = document.getElementById("searchType");
-  const results = document.getElementById("searchResults");
+  const fields = {
+    location: document.getElementById("searchLocation"),
+    minRent: document.getElementById("searchMinRent"),
+    maxRent: document.getElementById("searchMaxRent"),
+    type: document.getElementById("searchType")
+  };
 
-  locationInput.value = params.get("location") || "";
-  maxRentInput.value = params.get("budget") || "";
+  Object.entries(fields).forEach(([key, input]) => {
+    input.value = params.get(key) || "";
+  });
 
   const applyFilters = async () => {
+    const results = document.getElementById("searchResults");
     results.innerHTML = `<div class="empty-state">Loading houses...</div>`;
     try {
       const houses = await loadProperties({
-        location: locationInput.value,
-        type: typeInput.value,
-        maxRent: maxRentInput.value
+        location: fields.location.value,
+        minRent: fields.minRent.value,
+        maxRent: fields.maxRent.value,
+        type: fields.type.value
       });
-      renderPropertyGrid("searchResults", houses);
+      await renderHouseGrid("searchResults", houses);
     } catch (error) {
       results.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
     }
@@ -226,13 +213,59 @@ async function setupSearch() {
     event.preventDefault();
     applyFilters();
   });
-
   document.getElementById("clearFilters").addEventListener("click", () => {
     form.reset();
     applyFilters();
   });
-
   applyFilters();
+}
+
+async function setupHouseDetails() {
+  const container = document.getElementById("houseDetails");
+  if (!container) return;
+
+  const id = new URLSearchParams(window.location.search).get("id");
+  if (!id) {
+    container.innerHTML = `<div class="empty-state">House not found.</div>`;
+    return;
+  }
+
+  try {
+    const house = await apiRequest(`/properties/${id}`);
+    const favoriteIds = await loadFavoriteIds();
+    const images = Array.isArray(house.images) && house.images.length ? house.images : ["assets/aquarium-garden.jpg"];
+    const landlord = house.landlord || {};
+    container.innerHTML = `
+      <div class="detail-layout">
+        <div class="detail-gallery">
+          ${images.map((image) => `<img src="${escapeHtml(getImageSource(image))}" alt="${escapeHtml(house.title || "House photo")}">`).join("")}
+        </div>
+        <article class="panel detail-panel">
+          <p class="eyebrow">${escapeHtml(house.status || "Available")}</p>
+          <h1>${escapeHtml(house.title || "Rental house")}</h1>
+          <p class="lead">${escapeHtml(house.location || "")} &bull; ${escapeHtml(house.type || "")}</p>
+          <strong class="price">${money(house.rent)} / month</strong>
+          <p>${escapeHtml(house.description || "No description provided.")}</p>
+          <div class="contact-card">
+            <h2>Landlord contact</h2>
+            <p><strong>${escapeHtml(landlord.name || "Landlord")}</strong></p>
+            <p>Email: ${landlord.email ? `<a href="mailto:${escapeHtml(landlord.email)}">${escapeHtml(landlord.email)}</a>` : "Not provided"}</p>
+            <p>Phone: ${landlord.phone ? `<a href="tel:${escapeHtml(landlord.phone)}">${escapeHtml(landlord.phone)}</a>` : "Not provided"}</p>
+            <p>Location: ${escapeHtml(landlord.location || "Not provided")}</p>
+          </div>
+          ${
+            getUser()?.role === "tenant"
+              ? `<button class="button" data-favorite="${escapeHtml(id)}" data-saved="${favoriteIds.has(id)}" type="button">${favoriteIds.has(id) ? "Saved to favorites" : "Save favorite"}</button>`
+              : getUser()
+                ? `<p class="muted">Favorites are available for tenant accounts.</p>`
+                : `<a class="button" href="login.html">Login to save favorite</a>`
+          }
+        </article>
+      </div>
+    `;
+  } catch (error) {
+    container.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
+  }
 }
 
 function setupAuth() {
@@ -249,6 +282,8 @@ function setupAuth() {
           body: JSON.stringify({
             name: document.getElementById("registerName").value,
             email: document.getElementById("registerEmail").value,
+            phone: document.getElementById("registerPhone").value,
+            location: document.getElementById("registerLocation").value,
             role: document.getElementById("registerRole").value,
             password: document.getElementById("registerPassword").value
           })
@@ -282,338 +317,298 @@ function setupAuth() {
   }
 }
 
-async function updateDashboardStats(houses = null) {
-  const total = document.getElementById("totalListings");
-  const available = document.getElementById("availableListings");
-  const saved = document.getElementById("savedListings");
-  if (!total || !available || !saved) return;
-
-  const user = getUser();
-  const listings = houses || [];
-  const monthlyValue = listings.reduce((sum, house) => sum + Number(house.rent || 0), 0);
-  total.textContent = listings.length;
-  document.getElementById("roleMetric").textContent = user?.role ? user.role : "-";
-  document.getElementById("priceMetric").textContent = money(monthlyValue);
-  document.getElementById("accountMetric").textContent = "Active";
-
-  if (user?.role === "tenant") {
-    const bookings = await loadBookings().catch(() => []);
-    available.textContent = listings.filter((house) => (house.status || "Available") === "Available").length;
-    saved.textContent = bookings.length;
-    document.getElementById("totalListingsLabel").textContent = "Available houses";
-    document.getElementById("availableListingsLabel").textContent = "Ready to book";
-    document.getElementById("savedListingsLabel").textContent = "Your bookings";
-    return;
-  }
-
-  available.textContent = listings.filter((house) => (house.status || "Available") === "Available").length;
-  saved.textContent = getSavedIds().length;
-  document.getElementById("totalListingsLabel").textContent = "Your listings";
-  document.getElementById("availableListingsLabel").textContent = "Available";
-  document.getElementById("savedListingsLabel").textContent = "Tenant interest";
+function statCard(label, value) {
+  return `<article class="stat"><span>${escapeHtml(value)}</span><p>${escapeHtml(label)}</p></article>`;
 }
 
-function renderDashboardListings(houses) {
-  const container = document.getElementById("dashboardListings");
-  if (!container) return;
-
-  container.innerHTML = "";
-  if (!houses.length) {
-    container.innerHTML = `<div class="empty-state">No database listings yet. Add your first property.</div>`;
-    return;
-  }
-
-  houses.forEach((house) => {
-    const id = getHouseId(house);
-    const item = document.createElement("article");
-    item.className = "listing-item";
-    const images = getHouseImages(house);
-    const imageMarkup = images.length
-      ? `<img src="${escapeHtml(getImageSource(images[0]))}" alt="${escapeHtml(house.title)}">`
-      : `<span>No photo</span>`;
-    item.innerHTML = `
-      <div class="listing-photo">${imageMarkup}</div>
-      <h3>${escapeHtml(house.title)}</h3>
-      <span class="property-meta">${escapeHtml(house.location)} &bull; ${escapeHtml(house.type)}</span>
-      <strong>${money(house.rent)} / month</strong>
-      <p class="muted">${escapeHtml(house.description || "No description provided.")}</p>
-      <div class="listing-actions">
-        <button class="button small" data-toggle-status="${escapeHtml(id)}" type="button">${escapeHtml(house.status || "Available")}</button>
-        <button class="text-button" data-delete-house="${escapeHtml(id)}" type="button">Delete</button>
+function listingItem(house, options = {}) {
+  const id = getHouseId(house);
+  const landlord = house.landlord || {};
+  return `
+    <article class="listing-item">
+      <img src="${escapeHtml(getImageSource((house.images || [])[0]))}" alt="${escapeHtml(house.title || "House")}">
+      <div>
+        <h3>${escapeHtml(house.title || "Rental house")}</h3>
+        <p class="muted">${escapeHtml(house.location || "")} &bull; ${escapeHtml(house.type || "")} &bull; ${money(house.rent)}</p>
+        ${landlord.name ? `<p class="muted">Landlord: ${escapeHtml(landlord.name)} ${landlord.email ? `(${escapeHtml(landlord.email)})` : ""}</p>` : ""}
+        <div class="card-actions">
+          <a class="button small" href="house.html?id=${escapeHtml(id)}">View</a>
+          ${options.landlord ? `<button class="text-button" data-edit-listing="${escapeHtml(id)}" type="button">Edit</button><button class="text-button danger" data-delete-listing="${escapeHtml(id)}" type="button">Delete</button>` : ""}
+          ${options.admin ? `<button class="text-button" data-approve-listing="${escapeHtml(id)}" type="button">Approve</button><button class="text-button danger" data-admin-delete-listing="${escapeHtml(id)}" type="button">Remove</button>` : ""}
+          ${options.favorite ? `<button class="text-button danger" data-favorite="${escapeHtml(id)}" data-saved="true" type="button">Remove favorite</button>` : ""}
+        </div>
       </div>
-    `;
-    container.appendChild(item);
-  });
+    </article>
+  `;
 }
 
-function renderBookings(containerId, bookings, options = {}) {
-  const container = document.getElementById(containerId);
-  if (!container) return;
+function propertyFormTemplate(house = {}) {
+  return `
+    <form class="panel form-stack" id="listingForm">
+      <h2>${house._id ? "Edit listing" : "Add house listing"}</h2>
+      <input id="listingId" type="hidden" value="${escapeHtml(house._id || "")}">
+      <label for="listingTitle">House title</label>
+      <input id="listingTitle" type="text" required value="${escapeHtml(house.title || "")}" placeholder="Two bedroom apartment">
+      <label for="listingLocation">Location</label>
+      <input id="listingLocation" type="text" required value="${escapeHtml(house.location || "")}" placeholder="Kilimani">
+      <label for="listingType">House type</label>
+      <select id="listingType" required>
+        ${HOUSE_TYPES.map((type) => `<option value="${type}" ${house.type === type ? "selected" : ""}>${type}</option>`).join("")}
+      </select>
+      <label for="listingRent">Monthly rent</label>
+      <input id="listingRent" type="number" min="1" required value="${escapeHtml(house.rent || "")}" placeholder="35000">
+      <label for="listingStatus">Availability</label>
+      <select id="listingStatus">
+        <option value="Available" ${house.status !== "Occupied" ? "selected" : ""}>Available</option>
+        <option value="Occupied" ${house.status === "Occupied" ? "selected" : ""}>Occupied</option>
+      </select>
+      <label for="listingDescription">Description</label>
+      <textarea id="listingDescription" rows="4" placeholder="Key details about the house">${escapeHtml(house.description || "")}</textarea>
+      <label for="listingImages">Upload photos</label>
+      <input id="listingImages" type="file" accept="image/*" multiple>
+      <button class="button" type="submit">${house._id ? "Update listing" : "Save listing"}</button>
+    </form>
+  `;
+}
 
-  container.innerHTML = "";
-  if (!bookings.length) {
-    container.innerHTML = `<div class="empty-state">${escapeHtml(options.emptyMessage || "No bookings yet.")}</div>`;
-    return;
-  }
-
-  bookings.forEach((booking) => {
-    const property = getBookingProperty(booking);
-    const images = getHouseImages(property);
-    const imageMarkup = images.length
-      ? `<img src="${escapeHtml(getImageSource(images[0]))}" alt="${escapeHtml(property.title || "House")}">`
-      : `<span>No photo</span>`;
-    const tenant = booking.tenant || {};
-    const item = document.createElement("article");
-    item.className = "listing-item";
-    item.innerHTML = `
-      <div class="listing-photo">${imageMarkup}</div>
-      <h3>${escapeHtml(property.title || "House booking")}</h3>
-      <span class="property-meta">${escapeHtml(property.location || "")} &bull; ${escapeHtml(property.type || "Rental")}</span>
-      <strong>${property.rent ? `${money(property.rent)} / month` : escapeHtml(booking.status)}</strong>
-      <p class="muted">${escapeHtml(booking.message || "No message provided.")}</p>
-      ${
-        options.showTenant
-          ? `<p class="muted">Tenant: ${escapeHtml(tenant.name || "Tenant")} ${tenant.email ? `(${escapeHtml(tenant.email)})` : ""}</p>`
-          : ""
-      }
-      <div class="listing-actions">
-        <span class="status-pill">${escapeHtml(booking.status || "Pending")}</span>
+async function renderTenantDashboard() {
+  const stats = document.getElementById("dashboardStats");
+  const workspace = document.getElementById("dashboardWorkspace");
+  const [favorites, houses] = await Promise.all([
+    apiRequest("/favorites"),
+    loadProperties({ featured: true })
+  ]);
+  stats.innerHTML = [
+    statCard("Saved favorites", favorites.length),
+    statCard("Featured houses", houses.length),
+    statCard("Account type", "Tenant")
+  ].join("");
+  workspace.innerHTML = `
+    <section class="panel">
+      <div class="result-bar">
+        <h2>Your favorites</h2>
+        <a class="button small" href="houses.html">Search houses</a>
+      </div>
+      <div class="listing-list">
         ${
-          options.canManage && booking.status === "Pending"
-            ? `<button class="button small" data-booking-status="${escapeHtml(getBookingId(booking))}" data-status="Approved" type="button">Approve</button>
-               <button class="text-button" data-booking-status="${escapeHtml(getBookingId(booking))}" data-status="Rejected" type="button">Reject</button>`
-            : ""
+          favorites.length
+            ? favorites.map((favorite) => listingItem(favorite.property, { favorite: true })).join("")
+            : `<div class="empty-state">You have not saved any favorites yet.</div>`
         }
       </div>
-    `;
-    container.appendChild(item);
-  });
+    </section>
+  `;
 }
 
-async function loadMyListings() {
+async function renderLandlordDashboard(editHouse = null) {
+  const stats = document.getElementById("dashboardStats");
+  const workspace = document.getElementById("dashboardWorkspace");
   const houses = await apiRequest("/properties/mine");
-  const bookings = await loadBookings().catch(() => []);
-  renderDashboardListings(houses);
-  updateDashboardStats(houses);
-  document.getElementById("savedListings").textContent = bookings.length;
-  renderBookings("landlordBookings", bookings, {
-    canManage: true,
-    showTenant: true,
-    emptyMessage: "No tenant booking requests yet."
-  });
-  return houses;
+  stats.innerHTML = [
+    statCard("Your listings", houses.length),
+    statCard("Available", houses.filter((house) => house.status === "Available").length),
+    statCard("Occupied", houses.filter((house) => house.status === "Occupied").length)
+  ].join("");
+  workspace.innerHTML = `
+    <div class="dashboard-grid">
+      ${propertyFormTemplate(editHouse || {})}
+      <section class="panel">
+        <div class="result-bar">
+          <h2>Your listings</h2>
+          <button class="text-button" id="refreshListings" type="button">Refresh</button>
+        </div>
+        <div class="listing-list">
+          ${
+            houses.length
+              ? houses.map((house) => listingItem(house, { landlord: true })).join("")
+              : `<div class="empty-state">No listings yet. Add your first house.</div>`
+          }
+        </div>
+      </section>
+    </div>
+  `;
 }
 
-async function loadTenantDashboard() {
-  const houses = await loadProperties();
-  const availableHouses = houses.filter((house) => (house.status || "Available") === "Available");
-  const bookings = await loadBookings();
-  const bookedPropertyIds = bookings
-    .map((booking) => getHouseId(getBookingProperty(booking)))
-    .filter(Boolean);
-  localStorage.setItem(STORAGE_KEYS.saved, JSON.stringify(bookedPropertyIds));
+function userItem(user) {
+  return `
+    <article class="listing-item">
+      <div class="avatar">${escapeHtml((user.name || "U").slice(0, 1).toUpperCase())}</div>
+      <div>
+        <h3>${escapeHtml(user.name || "User")}</h3>
+        <p class="muted">${escapeHtml(user.email || "")} &bull; ${escapeHtml(user.role || "")}</p>
+        <p class="muted">${escapeHtml(user.phone || "No phone")} &bull; ${escapeHtml(user.location || "No location")}</p>
+        <div class="card-actions">
+          <button class="text-button danger" data-delete-user="${escapeHtml(user._id)}" type="button">Remove user</button>
+        </div>
+      </div>
+    </article>
+  `;
+}
 
-  renderPropertyGrid("tenantAvailableHouses", availableHouses);
-  renderBookings("tenantBookings", bookings, {
-    emptyMessage: "You have not booked a house yet."
-  });
-  await updateDashboardStats(availableHouses);
+async function renderAdminDashboard() {
+  const stats = document.getElementById("dashboardStats");
+  const workspace = document.getElementById("dashboardWorkspace");
+  const [reports, users, listings] = await Promise.all([
+    apiRequest("/admin/reports"),
+    apiRequest("/admin/users"),
+    apiRequest("/admin/listings")
+  ]);
+  stats.innerHTML = [
+    statCard("Users", reports.users),
+    statCard("Tenants", reports.tenants),
+    statCard("Landlords", reports.landlords),
+    statCard("Listings", reports.listings),
+    statCard("Available", reports.availableListings),
+    statCard("Favorites", reports.favorites)
+  ].join("");
+  workspace.innerHTML = `
+    <div class="dashboard-grid">
+      <section class="panel">
+        <h2>Manage users</h2>
+        <div class="listing-list">${users.map(userItem).join("") || `<div class="empty-state">No users found.</div>`}</div>
+      </section>
+      <section class="panel">
+        <h2>Manage listings</h2>
+        <div class="listing-list">${listings.map((house) => listingItem(house, { admin: true })).join("") || `<div class="empty-state">No listings found.</div>`}</div>
+      </section>
+    </div>
+  `;
 }
 
 async function setupDashboard() {
-  const form = document.getElementById("propertyForm");
-  if (!form) return;
+  const workspace = document.getElementById("dashboardWorkspace");
+  if (!workspace) return;
 
   const user = getUser();
-  if (!getToken()) {
+  if (!getToken() || !user) {
     window.location.href = "login.html";
     return;
   }
 
-  const greeting = document.getElementById("dashboardGreeting");
-  greeting.textContent = user ? `Hello, ${user.name}` : "Rental overview";
-  document.querySelectorAll("[data-role-link='landlord']").forEach((link) => {
-    link.hidden = user?.role === "tenant";
-  });
-  const dateLabel = document.getElementById("dashboardDate");
-  if (dateLabel) {
-    dateLabel.textContent = new Date().toLocaleString(undefined, {
-      dateStyle: "medium",
-      timeStyle: "short"
-    });
+  document.getElementById("dashboardGreeting").textContent = `Hello, ${user.name}`;
+  document.getElementById("dashboardRole").textContent = `${user.role} workspace`;
+
+  try {
+    if (user.role === "admin") await renderAdminDashboard();
+    if (user.role === "landlord") await renderLandlordDashboard();
+    if (user.role === "tenant") await renderTenantDashboard();
+  } catch (error) {
+    workspace.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
   }
+}
 
-  const landlordDashboard = document.getElementById("landlordDashboard");
-  const tenantDashboard = document.getElementById("tenantDashboard");
-  const landlordRequestsSection = document.getElementById("landlordRequestsSection");
+async function handleFavoriteClick(button) {
+  if (!getToken()) {
+    window.location.href = "login.html";
+    return;
+  }
+  if (getUser()?.role !== "tenant") return;
 
-  if (user?.role === "tenant") {
-    landlordDashboard.hidden = true;
-    landlordRequestsSection.hidden = true;
-    tenantDashboard.hidden = false;
-
-    try {
-      await loadTenantDashboard();
-    } catch (error) {
-      document.getElementById("tenantAvailableHouses").innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
+  const id = button.dataset.favorite;
+  const saved = button.dataset.saved === "true";
+  button.disabled = true;
+  try {
+    if (saved) {
+      await apiRequest(`/favorites/${id}`, { method: "DELETE" });
+      button.dataset.saved = "false";
+      button.textContent = "Save";
+    } else {
+      await apiRequest(`/favorites/${id}`, { method: "POST" });
+      button.dataset.saved = "true";
+      button.textContent = "Saved";
     }
+    if (document.getElementById("dashboardWorkspace")) await renderTenantDashboard();
+  } catch (error) {
+    button.textContent = error.message;
+  } finally {
+    button.disabled = false;
+  }
+}
 
-    document.getElementById("refreshTenantHouses").addEventListener("click", loadTenantDashboard);
-    document.getElementById("refreshTenantBookings").addEventListener("click", loadTenantDashboard);
-    document.getElementById("logoutButton").addEventListener("click", () => {
+async function handleDashboardClick(event) {
+  const editButton = event.target.closest("[data-edit-listing]");
+  const deleteButton = event.target.closest("[data-delete-listing]");
+  const adminDeleteButton = event.target.closest("[data-admin-delete-listing]");
+  const approveButton = event.target.closest("[data-approve-listing]");
+  const deleteUserButton = event.target.closest("[data-delete-user]");
+
+  try {
+    if (editButton) {
+      const house = await apiRequest(`/properties/${editButton.dataset.editListing}`);
+      await renderLandlordDashboard(house);
+    }
+    if (deleteButton) {
+      await apiRequest(`/properties/${deleteButton.dataset.deleteListing}`, { method: "DELETE" });
+      await renderLandlordDashboard();
+    }
+    if (adminDeleteButton) {
+      await apiRequest(`/admin/listings/${adminDeleteButton.dataset.adminDeleteListing}`, { method: "DELETE" });
+      await renderAdminDashboard();
+    }
+    if (approveButton) {
+      await apiRequest(`/admin/listings/${approveButton.dataset.approveListing}/status`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ approvalStatus: "Approved" })
+      });
+      await renderAdminDashboard();
+    }
+    if (deleteUserButton) {
+      await apiRequest(`/admin/users/${deleteUserButton.dataset.deleteUser}`, { method: "DELETE" });
+      await renderAdminDashboard();
+    }
+  } catch (error) {
+    document.getElementById("dashboardWorkspace").insertAdjacentHTML("afterbegin", `<div class="empty-state">${escapeHtml(error.message)}</div>`);
+  }
+}
+
+async function handleListingSubmit(form) {
+  const id = document.getElementById("listingId").value;
+  const formData = new FormData();
+  formData.append("title", document.getElementById("listingTitle").value);
+  formData.append("location", document.getElementById("listingLocation").value);
+  formData.append("type", document.getElementById("listingType").value);
+  formData.append("rent", document.getElementById("listingRent").value);
+  formData.append("status", document.getElementById("listingStatus").value);
+  formData.append("description", document.getElementById("listingDescription").value);
+  [...document.getElementById("listingImages").files].forEach((file) => formData.append("images", file));
+
+  try {
+    await apiRequest(id ? `/properties/${id}` : "/properties", {
+      method: id ? "PUT" : "POST",
+      body: formData
+    });
+    await renderLandlordDashboard();
+  } catch (error) {
+    setFormMessage(form, error.message);
+  }
+}
+
+document.addEventListener("click", (event) => {
+  const favoriteButton = event.target.closest("[data-favorite]");
+  if (favoriteButton) handleFavoriteClick(favoriteButton);
+  if (event.target.closest("#dashboardWorkspace")) handleDashboardClick(event);
+});
+
+document.addEventListener("submit", (event) => {
+  const listingForm = event.target.closest("#listingForm");
+  if (!listingForm) return;
+  event.preventDefault();
+  handleListingSubmit(listingForm);
+});
+
+document.addEventListener("DOMContentLoaded", () => {
+  setupHome();
+  setupHouses();
+  setupHouseDetails();
+  setupAuth();
+  setupDashboard();
+
+  const logoutButton = document.getElementById("logoutButton");
+  if (logoutButton) {
+    logoutButton.addEventListener("click", () => {
       clearSession();
       window.location.href = "login.html";
     });
-    return;
   }
-
-  landlordDashboard.hidden = false;
-  landlordRequestsSection.hidden = false;
-  tenantDashboard.hidden = true;
-
-  document.getElementById("propertyImages").addEventListener("change", (event) => {
-    renderSelectedImagePreview(event.target.files);
-  });
-
-  try {
-    await loadMyListings();
-  } catch (error) {
-    document.getElementById("dashboardListings").innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
-  }
-
-  form.addEventListener("submit", async (event) => {
-    event.preventDefault();
-    const formData = new FormData();
-    formData.append("title", document.getElementById("propertyTitle").value);
-    formData.append("location", document.getElementById("propertyLocation").value);
-    formData.append("type", document.getElementById("propertyType").value);
-    formData.append("rent", document.getElementById("propertyRent").value);
-    formData.append("description", document.getElementById("propertyDescription").value);
-
-    [...document.getElementById("propertyImages").files].forEach((file) => {
-      formData.append("images", file);
-    });
-
-    try {
-      await apiRequest("/properties", {
-        method: "POST",
-        body: formData
-      });
-      form.reset();
-      renderSelectedImagePreview([]);
-      await loadMyListings();
-      setFormMessage(form, "Property saved to the database.", "success");
-    } catch (error) {
-      setFormMessage(form, error.message);
-    }
-  });
-
-  document.getElementById("dashboardListings").addEventListener("click", async (event) => {
-    const deleteButton = event.target.closest("[data-delete-house]");
-    const statusButton = event.target.closest("[data-toggle-status]");
-
-    try {
-      if (deleteButton) {
-        await apiRequest(`/properties/${deleteButton.dataset.deleteHouse}`, { method: "DELETE" });
-      }
-
-      if (statusButton) {
-        const nextStatus = statusButton.textContent === "Available" ? "Occupied" : "Available";
-        await apiRequest(`/properties/${statusButton.dataset.toggleStatus}`, {
-          method: "PUT",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ status: nextStatus })
-        });
-      }
-
-      await loadMyListings();
-    } catch (error) {
-      document.getElementById("dashboardListings").insertAdjacentHTML(
-        "afterbegin",
-        `<div class="empty-state">${escapeHtml(error.message)}</div>`
-      );
-    }
-  });
-
-  document.getElementById("landlordBookings").addEventListener("click", async (event) => {
-    const statusButton = event.target.closest("[data-booking-status]");
-    if (!statusButton) return;
-
-    try {
-      await apiRequest(`/bookings/${statusButton.dataset.bookingStatus}/status`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ status: statusButton.dataset.status })
-      });
-      await loadMyListings();
-    } catch (error) {
-      document.getElementById("landlordBookings").insertAdjacentHTML(
-        "afterbegin",
-        `<div class="empty-state">${escapeHtml(error.message)}</div>`
-      );
-    }
-  });
-
-  document.getElementById("logoutButton").addEventListener("click", () => {
-    clearSession();
-    window.location.href = "login.html";
-  });
-
-  document.getElementById("resetDemo").textContent = "Refresh";
-  document.getElementById("resetDemo").addEventListener("click", () => {
-    loadMyListings();
-  });
-
-  document.getElementById("refreshLandlordBookings").addEventListener("click", () => {
-    loadMyListings();
-  });
-}
-
-async function handleSaveClick(event) {
-  const button = event.target.closest("[data-save-house]");
-  if (!button) return;
-
-  if (!getToken()) {
-    window.location.href = "login.html";
-    return;
-  }
-
-  const id = button.dataset.saveHouse;
-  const saved = new Set(getSavedIds());
-  if (saved.has(id)) {
-    button.textContent = "Booked";
-    return;
-  } else {
-    button.disabled = true;
-    button.textContent = "Booking...";
-    try {
-      await apiRequest("/bookings", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          property: id,
-          message: "I am interested in this rental."
-        })
-      });
-      saved.add(id);
-      button.textContent = "Booked";
-      if (document.getElementById("tenantDashboard") && !document.getElementById("tenantDashboard").hidden) {
-        await loadTenantDashboard();
-      }
-    } catch (error) {
-      button.textContent = error.message;
-    } finally {
-      button.disabled = false;
-    }
-  }
-  localStorage.setItem(STORAGE_KEYS.saved, JSON.stringify([...saved]));
-  updateDashboardStats();
-}
-
-document.addEventListener("click", handleSaveClick);
-document.addEventListener("DOMContentLoaded", () => {
-  setupHome();
-  setupSearch();
-  setupAuth();
-  setupDashboard();
 });

@@ -35,6 +35,11 @@ const propertySchema = new mongoose.Schema(
       enum: ["Available", "Occupied"],
       default: "Available"
     },
+    approvalStatus: {
+      type: String,
+      enum: ["Pending", "Approved", "Removed"],
+      default: "Approved"
+    },
     landlord: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User"

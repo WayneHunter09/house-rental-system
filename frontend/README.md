@@ -8,13 +8,16 @@ Run the backend and open the Render/local server URL to use the database-backed 
 
 Pages included:
 
-- `index.html` - home page with featured houses
-- `search.html` - search and filter available houses
-- `login.html` - tenant login demo
-- `registrer.html` - registration page
-- `dashboard.html` - add, view, update, and delete demo listings
+- `index.html` - home page with search, featured houses, testimonials, and contact preview
+- `houses.html` - search and filter available houses
+- `house.html` - house detail page with photos and landlord contacts
+- `about.html` - about page
+- `contacts.html` - platform contact page
+- `login.html` - login page
+- `registrer.html` - tenant/landlord registration page
+- `dashboard.html` - role-aware tenant, landlord, and admin dashboard
 
-The frontend uses the backend API for users, properties, uploads, and booking interest. It only keeps the login token and a small client-side marker for already-clicked interest buttons in `localStorage`.
+The frontend uses the backend API for users, properties, uploads, favorites, and admin management. It only keeps the login token and current user summary in `localStorage`.
 
 ## Backend
 
@@ -34,6 +37,12 @@ Start MongoDB on your computer, then run:
 
 ```bash
 npm run dev
+```
+
+Create or update the first admin account with:
+
+```bash
+ADMIN_EMAIL=admin@example.com ADMIN_PASSWORD=change-me npm run create-admin
 ```
 
 The API will run at:
@@ -76,6 +85,13 @@ Uploaded property photos are stored on the server filesystem. On Render free web
 - `POST /api/properties`
 - `PUT /api/properties/:id`
 - `DELETE /api/properties/:id`
-- `GET /api/bookings`
-- `POST /api/bookings`
-- `PATCH /api/bookings/:id/status`
+- `GET /api/favorites`
+- `POST /api/favorites/:propertyId`
+- `DELETE /api/favorites/:propertyId`
+- `GET /api/admin/reports`
+- `GET /api/admin/users`
+- `PUT /api/admin/users/:id`
+- `DELETE /api/admin/users/:id`
+- `GET /api/admin/listings`
+- `PATCH /api/admin/listings/:id/status`
+- `DELETE /api/admin/listings/:id`
