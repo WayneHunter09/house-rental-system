@@ -7,6 +7,8 @@ const STORAGE_KEYS = {
 };
 
 const HOUSE_TYPES = ["Apartment", "Bungalow", "Bedsitter", "Maisonette"];
+const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+const STRONG_PASSWORD_PATTERN = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{8,}$/;
 
 function getToken() {
   return localStorage.getItem(STORAGE_KEYS.token);
@@ -82,6 +84,26 @@ function setFormMessage(form, message, type = "error") {
   }
   messageBox.textContent = message;
   messageBox.dataset.type = type;
+}
+
+function validateEmail(email) {
+  return EMAIL_PATTERN.test(String(email || "").trim());
+}
+
+function validateStrongPassword(password) {
+  return STRONG_PASSWORD_PATTERN.test(password || "");
+}
+
+function requireValidEmail(email) {
+  if (!validateEmail(email)) {
+    throw new Error("Enter a valid email address.");
+  }
+}
+
+function requireStrongPassword(password) {
+  if (!validateStrongPassword(password)) {
+    throw new Error("Password must be at least 8 characters and include uppercase, lowercase, number, and symbol.");
+  }
 }
 
 function renderHouseCard(house, favoriteIds = new Set()) {
@@ -271,21 +293,28 @@ async function setupHouseDetails() {
 function setupAuth() {
   const registerForm = document.getElementById("registerForm");
   const loginForm = document.getElementById("loginForm");
+  const forgotPasswordForm = document.getElementById("forgotPasswordForm");
+  const resetPasswordForm = document.getElementById("resetPasswordForm");
 
   if (registerForm) {
     registerForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       try {
+        const email = document.getElementById("registerEmail").value;
+        const password = document.getElementById("registerPassword").value;
+        requireValidEmail(email);
+        requireStrongPassword(password);
+
         const data = await apiRequest("/auth/register", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
             name: document.getElementById("registerName").value,
-            email: document.getElementById("registerEmail").value,
+            email,
             phone: document.getElementById("registerPhone").value,
             location: document.getElementById("registerLocation").value,
             role: document.getElementById("registerRole").value,
-            password: document.getElementById("registerPassword").value
+            password
           })
         });
         setSession(data);
@@ -300,11 +329,14 @@ function setupAuth() {
     loginForm.addEventListener("submit", async (event) => {
       event.preventDefault();
       try {
+        const email = document.getElementById("loginEmail").value;
+        requireValidEmail(email);
+
         const data = await apiRequest("/auth/login", {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({
-            email: document.getElementById("loginEmail").value,
+            email,
             password: document.getElementById("loginPassword").value
           })
         });
@@ -312,6 +344,62 @@ function setupAuth() {
         window.location.href = "dashboard.html";
       } catch (error) {
         setFormMessage(loginForm, error.message);
+      }
+    });
+  }
+
+  if (forgotPasswordForm) {
+    forgotPasswordForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        const email = document.getElementById("forgotEmail").value;
+        requireValidEmail(email);
+
+        const data = await apiRequest("/auth/forgot-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email })
+        });
+        setFormMessage(forgotPasswordForm, data.message, "success");
+
+        if (data.resetUrl) {
+          const resetLink = document.createElement("a");
+          resetLink.href = data.resetUrl;
+          resetLink.textContent = "Open reset form";
+          resetLink.className = "text-button";
+          forgotPasswordForm.appendChild(resetLink);
+        }
+      } catch (error) {
+        setFormMessage(forgotPasswordForm, error.message);
+      }
+    });
+  }
+
+  if (resetPasswordForm) {
+    const token = new URLSearchParams(window.location.search).get("token");
+    if (!token) {
+      setFormMessage(resetPasswordForm, "Password reset link is missing or invalid.");
+    }
+
+    resetPasswordForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      try {
+        const password = document.getElementById("resetPassword").value;
+        const confirmPassword = document.getElementById("resetPasswordConfirm").value;
+        requireStrongPassword(password);
+        if (password !== confirmPassword) {
+          throw new Error("Passwords do not match.");
+        }
+
+        const data = await apiRequest("/auth/reset-password", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ token, password })
+        });
+        setFormMessage(resetPasswordForm, data.message, "success");
+        resetPasswordForm.reset();
+      } catch (error) {
+        setFormMessage(resetPasswordForm, error.message);
       }
     });
   }

@@ -27,7 +27,8 @@
           <option value="landlord">Landlord</option>
         </select>
         <label for="registerPassword">Password</label>
-        <input id="registerPassword" type="password" required minlength="6" placeholder="At least 6 characters">
+        <input id="registerPassword" type="password" required minlength="8" autocomplete="new-password" placeholder="8+ chars with A-z, 0-9, symbol">
+        <small class="field-hint">Use uppercase, lowercase, a number, and a symbol.</small>
         <button class="button" type="submit">Register</button>
       </form>
       <p class="auth-note">Already have an account? <a href="login.html">Login</a></p>
