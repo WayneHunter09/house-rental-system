@@ -170,7 +170,8 @@ button {
 .detail-gallery img,
 .listing-item img {
   background: #eef4f8;
-  height: 100%;
+  display: block;
+  height: auto;
   object-fit: contain;
   width: 100%;
 }
@@ -260,9 +261,9 @@ textarea {
 }
 
 .house-image {
-  aspect-ratio: 4 / 3;
   background: #eef4f8;
   display: block;
+  min-height: 180px;
   position: relative;
 }
 
@@ -378,13 +379,13 @@ textarea {
 }
 
 .detail-gallery img:first-child {
-  aspect-ratio: 4 / 3;
+  max-height: 420px;
 }
 
 .detail-gallery img {
   background: #eef4f8;
   border-radius: 8px;
-  max-height: 360px;
+  max-height: 300px;
 }
 
 .detail-panel,
@@ -511,9 +512,12 @@ textarea {
 
 .listing-item img,
 .avatar {
-  aspect-ratio: 4 / 3;
   border-radius: 8px;
   overflow: hidden;
+}
+
+.listing-item img {
+  max-height: 120px;
 }
 
 .avatar {
