@@ -254,7 +254,7 @@ textarea {
 }
 
 .house-image {
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 4 / 3;
   display: block;
   position: relative;
 }
@@ -360,21 +360,23 @@ textarea {
 .detail-layout {
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
+  grid-template-columns: minmax(280px, 620px) minmax(320px, 440px);
+  justify-content: center;
 }
 
 .detail-gallery {
   display: grid;
   gap: 0.75rem;
+  width: 100%;
 }
 
 .detail-gallery img:first-child {
-  aspect-ratio: 16 / 10;
+  aspect-ratio: 4 / 3;
 }
 
 .detail-gallery img {
   border-radius: 8px;
-  max-height: 520px;
+  max-height: 360px;
 }
 
 .detail-panel,
@@ -495,7 +497,7 @@ textarea {
   border-radius: 8px;
   display: grid;
   gap: 1rem;
-  grid-template-columns: 110px minmax(0, 1fr);
+  grid-template-columns: 92px minmax(0, 1fr);
   padding: 1rem;
 }
 
