@@ -1,7 +1,7 @@
 const Property = require("../models/Property");
 
-const getUploadedImageData = (files = []) =>
-  files.map((file) => `data:${file.mimetype};base64,${file.buffer.toString("base64")}`);
+const getUploadedImagePaths = (files = []) =>
+  files.map((file) => `/uploads/properties/${file.filename}`);
 
 const normalizeExistingImages = (images) => {
   if (!images) return [];
@@ -78,7 +78,7 @@ exports.createProperty = async (req, res, next) => {
       return res.status(403).json({ message: "Only landlords can add houses" });
     }
 
-    const uploadedImages = getUploadedImageData(req.files);
+    const uploadedImages = getUploadedImagePaths(req.files);
     const images = [
       ...normalizeExistingImages(req.body.images),
       ...normalizeExistingImages(req.body.imageUrls),
@@ -133,7 +133,7 @@ exports.updateProperty = async (req, res, next) => {
 
     Object.keys(update).forEach((key) => update[key] === undefined && delete update[key]);
 
-    const uploadedImages = getUploadedImageData(req.files);
+    const uploadedImages = getUploadedImagePaths(req.files);
     const providedImages = [
       ...normalizeExistingImages(req.body.images),
       ...normalizeExistingImages(req.body.imageUrls)

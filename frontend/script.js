@@ -454,7 +454,6 @@ function propertyFormTemplate(house = {}) {
       <textarea id="listingDescription" rows="4" placeholder="Key details about the house">${escapeHtml(house.description || "")}</textarea>
       <label for="listingImages">Upload photos</label>
       <input id="listingImages" type="file" accept="image/*" multiple>
-      <small class="field-hint">Upload up to 6 photos. Each photo should be 1 MB or less.</small>
       <button class="button" type="submit">${house._id ? "Update listing" : "Save listing"}</button>
     </form>
   `;

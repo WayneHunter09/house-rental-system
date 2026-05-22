@@ -160,19 +160,12 @@ button {
   overflow: hidden;
 }
 
-.hero-photo img {
-  height: 100%;
-  object-fit: cover;
-  width: 100%;
-}
-
+.hero-photo img,
 .house-image img,
 .detail-gallery img,
 .listing-item img {
-  background: #eef4f8;
-  display: block;
-  height: auto;
-  object-fit: contain;
+  height: 100%;
+  object-fit: cover;
   width: 100%;
 }
 
@@ -261,9 +254,8 @@ textarea {
 }
 
 .house-image {
-  background: #eef4f8;
+  aspect-ratio: 16 / 10;
   display: block;
-  min-height: 180px;
   position: relative;
 }
 
@@ -368,24 +360,21 @@ textarea {
 .detail-layout {
   display: grid;
   gap: 1.5rem;
-  grid-template-columns: minmax(280px, 620px) minmax(320px, 440px);
-  justify-content: center;
+  grid-template-columns: minmax(0, 1fr) minmax(320px, 440px);
 }
 
 .detail-gallery {
   display: grid;
   gap: 0.75rem;
-  width: 100%;
 }
 
 .detail-gallery img:first-child {
-  max-height: 420px;
+  aspect-ratio: 16 / 10;
 }
 
 .detail-gallery img {
-  background: #eef4f8;
   border-radius: 8px;
-  max-height: 300px;
+  max-height: 520px;
 }
 
 .detail-panel,
@@ -506,18 +495,15 @@ textarea {
   border-radius: 8px;
   display: grid;
   gap: 1rem;
-  grid-template-columns: 92px minmax(0, 1fr);
+  grid-template-columns: 110px minmax(0, 1fr);
   padding: 1rem;
 }
 
 .listing-item img,
 .avatar {
+  aspect-ratio: 4 / 3;
   border-radius: 8px;
   overflow: hidden;
-}
-
-.listing-item img {
-  max-height: 120px;
 }
 
 .avatar {
