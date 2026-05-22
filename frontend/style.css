@@ -160,12 +160,18 @@ button {
   overflow: hidden;
 }
 
-.hero-photo img,
+.hero-photo img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
 .house-image img,
 .detail-gallery img,
 .listing-item img {
-  height: 100%;
-  object-fit: cover;
+  display: block;
+  height: auto;
+  object-fit: contain;
   width: 100%;
 }
 
@@ -254,7 +260,6 @@ textarea {
 }
 
 .house-image {
-  aspect-ratio: 16 / 10;
   display: block;
   position: relative;
 }
@@ -368,13 +373,8 @@ textarea {
   gap: 0.75rem;
 }
 
-.detail-gallery img:first-child {
-  aspect-ratio: 16 / 10;
-}
-
 .detail-gallery img {
   border-radius: 8px;
-  max-height: 520px;
 }
 
 .detail-panel,
@@ -501,9 +501,12 @@ textarea {
 
 .listing-item img,
 .avatar {
-  aspect-ratio: 4 / 3;
   border-radius: 8px;
   overflow: hidden;
+}
+
+.avatar {
+  aspect-ratio: 4 / 3;
 }
 
 .avatar {
