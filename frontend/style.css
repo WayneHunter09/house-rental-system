@@ -160,12 +160,18 @@ button {
   overflow: hidden;
 }
 
-.hero-photo img,
+.hero-photo img {
+  height: 100%;
+  object-fit: cover;
+  width: 100%;
+}
+
 .house-image img,
 .detail-gallery img,
 .listing-item img {
+  background: #eef4f8;
   height: 100%;
-  object-fit: cover;
+  object-fit: contain;
   width: 100%;
 }
 
@@ -255,6 +261,7 @@ textarea {
 
 .house-image {
   aspect-ratio: 4 / 3;
+  background: #eef4f8;
   display: block;
   position: relative;
 }
@@ -375,6 +382,7 @@ textarea {
 }
 
 .detail-gallery img {
+  background: #eef4f8;
   border-radius: 8px;
   max-height: 360px;
 }
