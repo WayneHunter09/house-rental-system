@@ -162,7 +162,8 @@ button {
 
 .hero-photo img,
 .house-image img,
-.detail-gallery img,
+.gallery-frame img,
+.gallery-thumb img,
 .listing-item img {
   height: 100%;
   object-fit: cover;
@@ -368,13 +369,83 @@ textarea {
   gap: 0.75rem;
 }
 
-.detail-gallery img:first-child {
+.gallery-frame {
   aspect-ratio: 16 / 10;
+  background: #0f172a;
+  border-radius: 8px;
+  overflow: hidden;
+  position: relative;
 }
 
-.detail-gallery img {
+.gallery-frame img {
+  display: block;
+}
+
+.gallery-button {
+  align-items: center;
+  background: rgba(15, 23, 42, 0.72);
+  border: 0;
+  border-radius: 999px;
+  color: #fff;
+  cursor: pointer;
+  display: inline-flex;
+  font-size: 2rem;
+  font-weight: 900;
+  height: 44px;
+  justify-content: center;
+  line-height: 1;
+  padding: 0;
+  position: absolute;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+}
+
+.gallery-button:hover {
+  background: rgba(15, 118, 110, 0.92);
+}
+
+.gallery-button-prev {
+  left: 0.75rem;
+}
+
+.gallery-button-next {
+  right: 0.75rem;
+}
+
+.gallery-counter {
+  background: rgba(15, 23, 42, 0.72);
+  border-radius: 999px;
+  bottom: 0.75rem;
+  color: #fff;
+  font-size: 0.85rem;
+  font-weight: 900;
+  padding: 0.35rem 0.65rem;
+  position: absolute;
+  right: 0.75rem;
+}
+
+.gallery-thumbs {
+  display: grid;
+  gap: 0.5rem;
+  grid-auto-columns: minmax(76px, 96px);
+  grid-auto-flow: column;
+  overflow-x: auto;
+  padding-bottom: 0.2rem;
+}
+
+.gallery-thumb {
+  aspect-ratio: 4 / 3;
+  background: transparent;
+  border: 2px solid transparent;
   border-radius: 8px;
-  max-height: 520px;
+  cursor: pointer;
+  overflow: hidden;
+  padding: 0;
+}
+
+.gallery-thumb.active {
+  border-color: var(--primary);
 }
 
 .detail-panel,

@@ -139,6 +139,43 @@ function renderHouseCard(house, favoriteIds = new Set()) {
   return article;
 }
 
+function renderImageGallery(images, title) {
+  const safeTitle = escapeHtml(title || "House photo");
+  const slides = images.map((image) => ({
+    src: getImageSource(image),
+    alt: safeTitle
+  }));
+  const hasMultiple = slides.length > 1;
+
+  return `
+    <div class="detail-gallery" data-gallery data-gallery-index="0">
+      <div class="gallery-frame">
+        <img data-gallery-image src="${escapeHtml(slides[0].src)}" alt="${slides[0].alt}">
+        ${
+          hasMultiple
+            ? `
+              <button class="gallery-button gallery-button-prev" data-gallery-step="-1" type="button" aria-label="Previous photo">&lsaquo;</button>
+              <button class="gallery-button gallery-button-next" data-gallery-step="1" type="button" aria-label="Next photo">&rsaquo;</button>
+              <span class="gallery-counter" data-gallery-counter>1 / ${slides.length}</span>
+            `
+            : ""
+        }
+      </div>
+      ${
+        hasMultiple
+          ? `<div class="gallery-thumbs" aria-label="House photos">
+              ${slides.map((slide, index) => `
+                <button class="gallery-thumb ${index === 0 ? "active" : ""}" data-gallery-thumb="${index}" type="button" aria-label="Show photo ${index + 1}">
+                  <img src="${escapeHtml(slide.src)}" alt="">
+                </button>
+              `).join("")}
+            </div>`
+          : ""
+      }
+    </div>
+  `;
+}
+
 async function loadProperties(params = {}) {
   const query = new URLSearchParams();
   if (params.location) query.set("location", params.location);
@@ -259,9 +296,7 @@ async function setupHouseDetails() {
     const landlord = house.landlord || {};
     container.innerHTML = `
       <div class="detail-layout">
-        <div class="detail-gallery">
-          ${images.map((image) => `<img src="${escapeHtml(getImageSource(image))}" alt="${escapeHtml(house.title || "House photo")}">`).join("")}
-        </div>
+        ${renderImageGallery(images, house.title)}
         <article class="panel detail-panel">
           <p class="eyebrow">${escapeHtml(house.status || "Available")}</p>
           <h1>${escapeHtml(house.title || "Rental house")}</h1>
@@ -288,6 +323,38 @@ async function setupHouseDetails() {
   } catch (error) {
     container.innerHTML = `<div class="empty-state">${escapeHtml(error.message)}</div>`;
   }
+}
+
+function updateGallery(gallery, nextIndex) {
+  const image = gallery.querySelector("[data-gallery-image]");
+  const thumbs = [...gallery.querySelectorAll("[data-gallery-thumb]")];
+  const counter = gallery.querySelector("[data-gallery-counter]");
+  if (!image || !thumbs.length) return;
+
+  const total = thumbs.length;
+  const index = (nextIndex + total) % total;
+  const activeThumb = thumbs[index];
+  const thumbImage = activeThumb.querySelector("img");
+
+  gallery.dataset.galleryIndex = String(index);
+  image.src = thumbImage.src;
+  thumbs.forEach((thumb) => thumb.classList.toggle("active", thumb === activeThumb));
+  if (counter) counter.textContent = `${index + 1} / ${total}`;
+}
+
+function handleGalleryClick(event) {
+  const stepButton = event.target.closest("[data-gallery-step]");
+  const thumbButton = event.target.closest("[data-gallery-thumb]");
+  if (!stepButton && !thumbButton) return;
+
+  const gallery = event.target.closest("[data-gallery]");
+  if (!gallery) return;
+
+  const currentIndex = Number(gallery.dataset.galleryIndex || 0);
+  const nextIndex = thumbButton
+    ? Number(thumbButton.dataset.galleryThumb)
+    : currentIndex + Number(stepButton.dataset.galleryStep);
+  updateGallery(gallery, nextIndex);
 }
 
 function setupAuth() {
@@ -675,6 +742,7 @@ async function handleListingSubmit(form) {
 document.addEventListener("click", (event) => {
   const favoriteButton = event.target.closest("[data-favorite]");
   if (favoriteButton) handleFavoriteClick(favoriteButton);
+  handleGalleryClick(event);
   if (event.target.closest("#dashboardWorkspace")) handleDashboardClick(event);
 });
 
